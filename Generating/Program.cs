@@ -11,14 +11,52 @@ namespace Generating
     {
         private Texture2D texture;
         private View view;
-        private int W = 65;
-        private int H = 65;
+        private int W = 513;
+        private int H = 513;
         TerrainGenerator terrainGenerator;
         Camera camera;
         Vector3[] vertBuffer;
         int VBO;
-
-
+        float zoom = 1f;
+        private float min = 0;
+        private float max = 10;
+        private float roughness = 10;
+        public float Roughness
+        {
+            get
+            {
+                return roughness;
+            }
+            set
+            {
+                roughness = value;
+                terrainGenerator.GenerateHeightMap(W, H, 40, -20, -20, 40, roughness, min, max);
+            }
+        }
+        public float Min
+        {
+            get
+            {
+                return min;
+            }
+            set
+            {
+                min = value;
+                terrainGenerator.GenerateHeightMap(W, H, 40, -20, -20, 40, roughness, min, max);
+            }
+        }
+        public float Max
+        {
+            get
+            {
+                return max;
+            }
+            set
+            {
+                max = value;
+                terrainGenerator.GenerateHeightMap(W, H, 40, -20, -20, 40, roughness, min, max);
+            }
+        }
         public Game()
             : base(800, 600, GraphicsMode.Default, "OpenTK")
         {
@@ -35,7 +73,7 @@ namespace Generating
             
             if (!isCalculated)
             {
-                terrainGenerator.GenerateHeightMap(W, H, 5, 5, 5, 5, 10);
+                terrainGenerator.GenerateHeightMap(W, H, 40, 20, 10, 30, roughness, min, max);
                 isCalculated = true;
             }
             //texture = AssetsLoader.LoadTexture("land.png");
@@ -58,10 +96,27 @@ namespace Generating
         protected override void OnUpdateFrame(FrameEventArgs e)
         {
             base.OnUpdateFrame(e);
-            
+
+            GetInput();
             camera.UpdateView(OpenTK.Input.Mouse.GetState(), OpenTK.Input.Keyboard.GetState());
         }
-        
+        private bool isEdited = false;
+        private void GetInput()
+        {
+            if (Keyboard[Key.Tilde] && !isEdited)
+            {
+                string buffer = Console.ReadLine();
+                if (buffer.Contains("r "))
+                    Roughness = float.Parse(buffer.Remove(0, 2));
+                else if (buffer.Contains("min "))
+                    Min = float.Parse(buffer.Remove(0, 4));
+                else if (buffer.Contains("max "))
+                    Max = float.Parse(buffer.Remove(0, 4));
+                else if (buffer.Contains("r"))
+                    terrainGenerator.GenerateHeightMap(W, H, 40, 20, 10, 30, roughness, min, max);
+                isEdited = true;
+            }
+        }
         private bool isCalculated = false;
         protected override void OnRenderFrame(FrameEventArgs e)
         {
@@ -69,41 +124,80 @@ namespace Generating
            
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
-            //SpriteHandler.Begin(Width, Height);
-            //view.Transform();
-            
-            GL.EnableClientState(ArrayCap.VertexArray);
-            GL.BindBuffer(BufferTarget.ArrayBuffer, VBO);
-            GL.VertexPointer(3, VertexPointerType.Float, Vector3.SizeInBytes, 0);
-
             GL.Color3(Color.Red);
-            //GL.DrawElements(BeginMode.TriangleStrip, W*H + (W-1)*(H-2), DrawElementsType.UnsignedInt, ())
-            for (int i = 0; i < W; i++)
-            {
-                GL.Begin(BeginMode.LineStrip);
-                for (int j = 0; j < H; j++)
+            //GL.DrawElements(BeginMode.TriangleStrip, W * H + (W - 1) * (H - 2), DrawElementsType.UnsignedInt, ())
+            //for (int i = 0; i < W; i++)
+            //{
+            //    GL.Begin(BeginMode.LineStrip);
+            //    for (int j = 0; j < H; j++)
+            //    {
+            //        GL.Vertex3(i, terrainGenerator.HeightMap[i, j], j);
+            //    }
+            //    GL.End();
+            //}
+            //for (int i = 0; i < H; i++)
+            //{
+            //    GL.Begin(BeginMode.LineStrip);
+            //    for (int j = 0; j < W; j++)
+            //    {
+            //        GL.Vertex3(j, terrainGenerator.HeightMap[j, i], i);
+            //    }
+            //    GL.End();
+            //}
+
+            //for (int i = 0; i < W - 1; i++)
+            //    for (int j = 0; j < H - 1; j++)
+            //    {
+            //        float z = i * zoom;
+            //        float x = j * zoom;
+
+            //        GL.Begin(BeginMode.TriangleStrip);
+
+            //        GL.Vertex3(x, terrainGenerator.HeightMap[i, j], z);
+            //        GL.Vertex3(x + zoom, terrainGenerator.HeightMap[i, j + 1], z);
+            //        GL.Vertex3(x, terrainGenerator.HeightMap[i + 1, j], z + zoom);
+            //        GL.Vertex3(x + zoom, terrainGenerator.HeightMap[i + 1, j + 1], z + zoom);
+
+            //        GL.End();
+            //    }
+            int triangleCount = 0;
+            for (int i = 0; i < W - 1; i++)
+                for (int j = 0; j < H - 1; j++)
                 {
-                    GL.Vertex3(i, terrainGenerator.HeightMap[i, j], j);
+                    float z = i * zoom;
+                    float x = j * zoom;
+
+                    GL.Begin(BeginMode.LineStrip);
+
+                    GL.Vertex3(x, terrainGenerator.HeightMap[i, j], z);
+                    GL.Vertex3(x + zoom, terrainGenerator.HeightMap[i + 1, j + 1], z + zoom);
+                    GL.Vertex3(x, terrainGenerator.HeightMap[i + 1, j], z + zoom);
+                    GL.Vertex3(x, terrainGenerator.HeightMap[i, j], z);
+                    GL.Vertex3(x + zoom, terrainGenerator.HeightMap[i, j + 1], z);
+                    GL.Vertex3(x + zoom, terrainGenerator.HeightMap[i + 1, j + 1], z + zoom);
+
+                    GL.End();
+                    triangleCount += 2;
                 }
-                GL.End();
-            }
-            for (int i = 0; i < H; i++)
-            {
-                GL.Begin(BeginMode.LineStrip);
-                for (int j = 0; j < W; j++)
-                {
-                    GL.Vertex3(j, terrainGenerator.HeightMap[j, i], i);
-                }
-                GL.End();
-            }
+            GL.Color3(Color.White);
+            GL.Begin(BeginMode.Polygon);
+            GL.Vertex3(0, 0, 0);
+            GL.Vertex3(100, 0, 0);
+            GL.Vertex3(100, 0, 100);
+            GL.Vertex3(0, 0, 100);
+            GL.End();
             GL.Flush();
-            //GL.PushMatrix();
-            //GL.PopMatrix();
             SwapBuffers();
+            if (isRendered)
+                Console.WriteLine(triangleCount);
+            isRendered = false;
+            isEdited = false;
         }
+        bool isRendered = true;
         static void Main()
         {
-            using (Game game = new Game())
+            Game game = new Game();
+            using (game)
             {
                 game.Run(30.0);
             }
