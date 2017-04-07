@@ -1,9 +1,8 @@
 ﻿using System;
 using OpenTK;
+using OpenTK.Input;
 using OpenTK.Graphics;
 using OpenTK.Graphics.OpenGL;
-using OpenTK.Input;
-using OpenTK.Platform;
 using System.Drawing;
 
 namespace Generating
@@ -15,8 +14,10 @@ namespace Generating
         private int W = 65;
         private int H = 65;
         TerrainGenerator terrainGenerator;
+        Camera camera;
         Vector3[] vertBuffer;
         int VBO;
+
 
         public Game()
             : base(800, 600, GraphicsMode.Default, "OpenTK")
@@ -25,8 +26,9 @@ namespace Generating
             //GL.Enable(EnableCap.Texture2D);
             //view = new View(Vector3.Zero, 1.5f);
             terrainGenerator = new TerrainGenerator();
+            camera = Camera.Instance;
         }
-
+        Matrix4 transform;
         protected override void OnLoad(EventArgs e)
         {
             base.OnLoad(e);
@@ -37,6 +39,7 @@ namespace Generating
                 isCalculated = true;
             }
             //texture = AssetsLoader.LoadTexture("land.png");
+            transform = Matrix4.Identity * Matrix4.CreateTranslation(1, 0, 0);
             GL.ClearColor(0.1f, 0.2f, 0.5f, 0.0f);
             GL.Enable(EnableCap.DepthTest);
         }
@@ -55,9 +58,10 @@ namespace Generating
         protected override void OnUpdateFrame(FrameEventArgs e)
         {
             base.OnUpdateFrame(e);
-
-            //view.Update();
+            
+            camera.UpdateView(OpenTK.Input.Mouse.GetState(), OpenTK.Input.Keyboard.GetState());
         }
+        
         private bool isCalculated = false;
         protected override void OnRenderFrame(FrameEventArgs e)
         {
@@ -65,13 +69,9 @@ namespace Generating
            
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
-            Matrix4 modelView = Matrix4.LookAt(new Vector3(32f, 50, -40f), new Vector3(32f, 0, 32f), Vector3.UnitY);
-            GL.MatrixMode(MatrixMode.Modelview);
-            GL.LoadMatrix(ref modelView);
             //SpriteHandler.Begin(Width, Height);
             //view.Transform();
-
-
+            
             GL.EnableClientState(ArrayCap.VertexArray);
             GL.BindBuffer(BufferTarget.ArrayBuffer, VBO);
             GL.VertexPointer(3, VertexPointerType.Float, Vector3.SizeInBytes, 0);
@@ -97,6 +97,8 @@ namespace Generating
                 GL.End();
             }
             GL.Flush();
+            //GL.PushMatrix();
+            //GL.PopMatrix();
             SwapBuffers();
         }
         static void Main()
