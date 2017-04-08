@@ -7,10 +7,10 @@ using System.Drawing;
 
 namespace Generating
 {
-    enum RenderMode { Mesh, HeightMap }
+    enum RenderMode { Mesh, HeightMap, Colored, Textured }
     class Game : GameWindow
     {
-        private Texture2D texture;
+        private Texture texture;
         private View view;
         private int W = 65;
         private int H = 65;
@@ -18,6 +18,7 @@ namespace Generating
         Camera camera;
         Vector3[] vertBuffer;
         int VBO;
+        Color[,] ColorMap;
         float zoom = 1f;
         private float min = 0;
         private float max = 5;
@@ -65,7 +66,6 @@ namespace Generating
             : base(800, 600, GraphicsMode.Default, "OpenTK")
         {
             VSync = VSyncMode.On;
-            //GL.Enable(EnableCap.Texture2D);
             //view = new View(Vector3.Zero, 1.5f);
             terrainGenerator = new TerrainGenerator();
             camera = Camera.Instance;
@@ -74,7 +74,7 @@ namespace Generating
         protected override void OnLoad(EventArgs e)
         {
             base.OnLoad(e);
-            
+
             if (!isCalculated)
             {
                 terrainGenerator.GenerateHeightMap(W, H, topLeft, bottomLeft, bottomRight, topRight, roughness, min, max);
@@ -158,6 +158,10 @@ namespace Generating
                 {
                     SaveHeightMap();
                 }
+                else if (buffer.Contains("load texture"))
+                {
+                    texture = new Texture("land2.jpg");
+                }
                 else if (buffer.Contains("mesh"))
                 {
                     renderMode = RenderMode.Mesh;
@@ -165,6 +169,14 @@ namespace Generating
                 else if (buffer.Contains("heightmap"))
                 {
                     renderMode = RenderMode.HeightMap;
+                }
+                else if (buffer.Contains("colored"))
+                {
+                    renderMode = RenderMode.Colored;
+                }
+                else if (buffer.Contains("textured"))
+                {
+                    renderMode = RenderMode.Textured;
                 }
                 isEdited = true;
             }
@@ -182,6 +194,16 @@ namespace Generating
                 }
             bitmap.Save("Assets/HeightMap.bmp", System.Drawing.Imaging.ImageFormat.Bmp);
         }
+        private void LoadTexture(string name)
+        {
+            Bitmap bitmap = new Bitmap("Assets/" + name);
+            ColorMap = new Color[W, H];
+            for (int i = 0; i < W; i++)
+                for (int j = 0; j < H; j++)
+                {
+                    ColorMap[i, j] = bitmap.GetPixel(i, j);
+                }
+        }
         protected override void OnRenderFrame(FrameEventArgs e)
         {
             base.OnRenderFrame(e);
@@ -195,6 +217,12 @@ namespace Generating
                     break;
                 case RenderMode.HeightMap:
                     RenderHeightMap();
+                    break;
+                case RenderMode.Colored:
+                    RenderColoredHeightMap();
+                    break;
+                case RenderMode.Textured:
+                    RenderTexturedHeightMap();
                     break;
             }
             GL.Flush();
@@ -215,10 +243,10 @@ namespace Generating
                     float x = j * zoom;
 
                     GL.Begin(BeginMode.TriangleStrip);
-                    GL.Vertex3(x, heightMap[i, j], z);
-                    GL.Vertex3(x + zoom, heightMap[i, j + 1], z);
-                    GL.Vertex3(x, heightMap[i + 1, j], z + zoom);
-                    GL.Vertex3(x + zoom, heightMap[i + 1, j + 1], z + zoom);
+                    GL.Vertex3(x, heightMap[i, j] * zoom, z);
+                    GL.Vertex3(x + zoom, heightMap[i, j + 1] * zoom, z);
+                    GL.Vertex3(x, heightMap[i + 1, j] * zoom, z + zoom);
+                    GL.Vertex3(x + zoom, heightMap[i + 1, j + 1] * zoom, z + zoom);
 
                     GL.End();
                 }
@@ -247,6 +275,60 @@ namespace Generating
                     GL.End();
                 }
             GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Fill);
+        }
+        private void RenderColoredHeightMap()
+        {
+            GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Fill);
+            for (int i = 0; i < W - 1; i++)
+                for (int j = 0; j < H - 1; j++)
+                {
+                    float z = i * zoom;
+                    float x = j * zoom;
+
+                    GL.Begin(BeginMode.TriangleStrip);
+                    GL.Color3(ColorMap[i, j]);
+                    GL.Vertex3(x, terrainGenerator.HeightMap[i, j] * zoom, z);
+                    GL.Color3(ColorMap[i + 1, j]);
+                    GL.Vertex3(x + zoom, terrainGenerator.HeightMap[i, j + 1] * zoom, z);
+                    GL.Color3(ColorMap[i, j + 1]);
+                    GL.Vertex3(x, terrainGenerator.HeightMap[i + 1, j] * zoom, z + zoom);
+                    GL.Color3(ColorMap[i + 1, j + 1]);
+                    GL.Vertex3(x + zoom, terrainGenerator.HeightMap[i + 1, j + 1] * zoom, z + zoom);
+
+                    GL.End();
+                }
+            GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Fill);
+        }
+        private void RenderTexturedHeightMap()
+        {
+            float[,] heightMap = terrainGenerator.HeightMap;
+            GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Fill);
+            GL.BindTexture(TextureTarget.Texture2D, texture.ID);
+            GL.Enable(EnableCap.Texture2D);
+            float stepTexCoord = 1.0f / W;
+            for (int i = 0; i < W - 1; i++)
+                for (int j = 0; j < H - 1; j++)
+                {
+                    float z = i * zoom;
+                    float x = j * zoom;
+
+                    GL.Begin(BeginMode.TriangleStrip);
+
+                    GL.TexCoord2(i * stepTexCoord, j * stepTexCoord);
+                    GL.Vertex3(x, heightMap[i, j] * zoom, z);
+
+                    GL.TexCoord2((i + 1) * stepTexCoord, j * stepTexCoord);
+                    GL.Vertex3(x + zoom, heightMap[i, j + 1] * zoom, z);
+
+                    GL.TexCoord2(i * stepTexCoord, (j + 1) * stepTexCoord);
+                    GL.Vertex3(x, heightMap[i + 1, j] * zoom, z + zoom);
+
+                    GL.TexCoord2((i + 1) * stepTexCoord, (j + 1) * stepTexCoord);
+                    GL.Vertex3(x + zoom, heightMap[i + 1, j + 1] * zoom, z + zoom);
+
+                    GL.End();
+                }
+            GL.Disable(EnableCap.Texture2D);
         }
         static void Main()
         {

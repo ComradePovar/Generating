@@ -12,7 +12,7 @@ namespace Generating
 {
     public class SpriteHandler
     {
-        public static void Draw(Texture2D texture, Vector2 position, Vector2 scale, Color color, Vector2 origin)
+        public static void Draw(Texture texture, Vector2 position, Vector2 scale, Color color, Vector2 origin)
         {
             Vector2[] vertices = new Vector2[]
             {
