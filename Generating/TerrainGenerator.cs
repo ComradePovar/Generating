@@ -14,6 +14,7 @@ namespace Generating
         public float Roughness { get; set; }
         public float Displacement { get; set; }
         public float[,] HeightMap { get; private set; }
+        public float[,] NormalizedHeightMap { get; private set; }
         public float Min { get; set; }
         public float Max { get; set; }
 
@@ -74,9 +75,25 @@ namespace Generating
                     }
                 }
             }
-
         }
 
+        public void NormalizeHeightMap()
+        {
+            NormalizedHeightMap = new float[Width, Height];
+            float max = float.MinValue, min = float.MaxValue;
+            for (int i = 0; i < Width; i++)
+                for (int j = 0; j < Height; j++)
+                {
+                    if (HeightMap[i, j] > max)
+                        max = HeightMap[i, j];
+                    if (HeightMap[i, j] < min)
+                        min = HeightMap[i, j];
+                }
+
+            for (int i = 0; i < Width; i++)
+                for (int j = 0; j < Height; j++)
+                    NormalizedHeightMap[i, j] = (HeightMap[i, j] - min) / (max - min);
+        }
         private float GetRandomFloat(float min, float max)
         {
             return (float)rand.NextDouble() * (max - min) + min;
