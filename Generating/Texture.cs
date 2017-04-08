@@ -11,7 +11,7 @@ using OpenTK.Graphics.OpenGL;
 
 namespace Generating
 {
-    public class Texture
+    class Texture
     {
         public int ID { get; set; }
         public int Width { get; set; }
@@ -33,7 +33,8 @@ namespace Generating
             {
                 throw new FileNotFoundException("File not found.");
             }
-            
+
+            GL.Hint(HintTarget.PerspectiveCorrectionHint, HintMode.Nicest);
             ID = GL.GenTexture();
             GL.BindTexture(TextureTarget.Texture2D, ID);
 

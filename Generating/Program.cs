@@ -11,23 +11,22 @@ namespace Generating
     class Game : GameWindow
     {
         private Texture texture;
-        private View view;
-        private int W = 65;
-        private int H = 65;
+        private int W = 1025;
+        private int H = 1025;
         TerrainGenerator terrainGenerator;
         Camera camera;
-        Vector3[] vertBuffer;
-        int VBO;
+
         Color[,] ColorMap;
         float zoom = 1f;
         private float min = 0;
         private float max = 5;
-        private float roughness = 3;
+        private float roughness = 0;
         private float topLeft = 0;
         private float bottomLeft = 0;
         private float bottomRight = 0;
         private float topRight = 0;
         private RenderMode renderMode = RenderMode.Mesh;
+        private VAO terrain;
 
         public float Roughness
         {
@@ -75,6 +74,9 @@ namespace Generating
         {
             base.OnLoad(e);
 
+            vao = new VAO();
+            terrain = new VAO();
+            
             if (!isCalculated)
             {
                 terrainGenerator.GenerateHeightMap(W, H, topLeft, bottomLeft, bottomRight, topRight, roughness, min, max);
@@ -94,7 +96,7 @@ namespace Generating
 
             GL.Viewport(ClientRectangle.X, ClientRectangle.Y, ClientRectangle.Width, ClientRectangle.Height);
 
-            Matrix4 projection = Matrix4.CreatePerspectiveFieldOfView((float)Math.PI / 4f, Width / (float)Height, 1.0f, 1000.0f);
+            Matrix4 projection = Matrix4.CreatePerspectiveFieldOfView((float)Math.PI / 4f, Width / (float)Height, 1.0f, 10000.0f);
             GL.MatrixMode(MatrixMode.Projection);
             GL.LoadMatrix(ref projection);
         }
@@ -209,7 +211,7 @@ namespace Generating
             base.OnRenderFrame(e);
            
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
-            //GL.DrawElements(BeginMode.TriangleStrip, W * H + (W - 1) * (H - 2), DrawElementsType.UnsignedInt, ())
+            //testDraw();
             switch (renderMode)
             {
                 case RenderMode.Mesh:
@@ -233,24 +235,19 @@ namespace Generating
         
         private void RenderMesh()
         {
-            float[,] heightMap = terrainGenerator.HeightMap;
+            terrainGenerator.CreateMesh(zoom, terrain);
+            GL.Color3(Color.Red);
             GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Line);
-            GL.Color3(Color.Green);
-            for (int i = 0; i < W - 1; i++)
-                for (int j = 0; j < H - 1; j++)
-                {
-                    float z = i * zoom;
-                    float x = j * zoom;
 
-                    GL.Begin(BeginMode.TriangleStrip);
-                    GL.Vertex3(x, heightMap[i, j] * zoom, z);
-                    GL.Vertex3(x + zoom, heightMap[i, j + 1] * zoom, z);
-                    GL.Vertex3(x, heightMap[i + 1, j] * zoom, z + zoom);
-                    GL.Vertex3(x + zoom, heightMap[i + 1, j + 1] * zoom, z + zoom);
-
-                    GL.End();
-                }
-            GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Fill);
+            GL.Enable(EnableCap.VertexArray);
+            GL.Enable(EnableCap.PrimitiveRestart);
+            GL.PrimitiveRestartIndex(terrain.IndicesCount);
+            GL.BindBuffer(BufferTarget.ArrayBuffer, terrain.VerticesBuffer);
+            GL.BindBuffer(BufferTarget.ElementArrayBuffer, terrain.IndicesBuffer);
+            GL.VertexPointer(3, VertexPointerType.Float, Vector3.SizeInBytes, 0);
+            GL.DrawElements(BeginMode.TriangleStrip, terrain.IndicesCount, DrawElementsType.UnsignedInt, 0);
+            GL.Disable(EnableCap.VertexArray);
+            GL.Disable(EnableCap.PrimitiveRestart);
         }
         private void RenderHeightMap()
         {
@@ -330,6 +327,39 @@ namespace Generating
                 }
             GL.Disable(EnableCap.Texture2D);
         }
+        private void testDraw()
+        {
+            vao.BindVerticesBuffer(myTriangle);
+            vao.BindIndicesBuffer(indices);
+            GL.Color3(Color.Green);
+            GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Line);
+
+            GL.Enable(EnableCap.PrimitiveRestart);
+            GL.Enable(EnableCap.VertexArray);
+            GL.PrimitiveRestartIndex(10);
+            GL.BindBuffer(BufferTarget.ArrayBuffer, vao.VerticesBuffer);
+            GL.BindBuffer(BufferTarget.ElementArrayBuffer, vao.IndicesBuffer);
+            GL.VertexPointer(3, VertexPointerType.Float, Vector3.SizeInBytes, 0);
+            GL.DrawElements(BeginMode.TriangleStrip, indices.Length, DrawElementsType.UnsignedInt, 0);
+            GL.Disable(EnableCap.VertexArray);
+        }
+        VAO vao;
+        Vector3[] myTriangle = new Vector3[]
+             {
+            new Vector3(0f, 0f, 0f), //0
+            new Vector3(0f, 1f, 0f), //1
+            new Vector3(1f, 0f, 0f), //2
+            new Vector3(1f, 1f, 0f), //3
+            new Vector3(2f, 0f, 0f), //4
+            new Vector3(2f, 1f, 0f), //5
+            new Vector3(0f, 2f, 0f), //6
+            new Vector3(1f, 2f, 0f), //7
+            new Vector3(2f, 2f, 0f) //8
+             };
+        uint[] indices = new uint[]
+        {
+            0, 1, 2, 3, 4, 5, 10, 1, 6, 3, 7, 5, 8
+        };
         static void Main()
         {
             Game game = new Game();

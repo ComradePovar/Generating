@@ -7,7 +7,7 @@ using OpenTK;
 
 namespace Generating
 {
-    public class TerrainGenerator
+    class TerrainGenerator
     {
         public int Width { get; set; }
         public int Height { get; set; }
@@ -75,6 +75,29 @@ namespace Generating
                     }
                 }
             }
+        }
+
+        public void CreateMesh(float zoom, VAO terrain)
+        {
+            Vector3[] vertices = new Vector3[Width * Height];
+            uint[] indices = new uint[2 * Width * Height];
+            for (int i = 0, ver = 0, ind = 0; i < Width; i++)
+            {
+                float z = i * zoom;
+                for (int j = 0; j < Height; j++)
+                {
+                    float x = j * zoom;
+
+                    vertices[ver++] = new Vector3(x, HeightMap[i, j] * zoom, z);
+                    indices[ind++] = (uint)(i * Width + j);
+                    if (i != Width - 1)
+                        indices[ind++] = (uint)((i + 1) * Width + j);
+                }
+
+                indices[ind++] = (uint)indices.Length;
+            }
+            terrain.BindVerticesBuffer(vertices);
+            terrain.BindIndicesBuffer(indices);
         }
 
         public void NormalizeHeightMap()
