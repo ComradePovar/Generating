@@ -11,16 +11,21 @@ namespace Generating
     {
         private Texture2D texture;
         private View view;
-        private int W = 513;
-        private int H = 513;
+        private int W = 65;
+        private int H = 65;
         TerrainGenerator terrainGenerator;
         Camera camera;
         Vector3[] vertBuffer;
         int VBO;
         float zoom = 1f;
         private float min = 0;
-        private float max = 10;
-        private float roughness = 10;
+        private float max = 5;
+        private float roughness = 2;
+        private float topLeft = 0;
+        private float bottomLeft = 0;
+        private float bottomRight = 0;
+        private float topRight = 0;
+
         public float Roughness
         {
             get
@@ -30,7 +35,6 @@ namespace Generating
             set
             {
                 roughness = value;
-                terrainGenerator.GenerateHeightMap(W, H, 40, -20, -20, 40, roughness, min, max);
             }
         }
         public float Min
@@ -42,7 +46,6 @@ namespace Generating
             set
             {
                 min = value;
-                terrainGenerator.GenerateHeightMap(W, H, 40, -20, -20, 40, roughness, min, max);
             }
         }
         public float Max
@@ -54,7 +57,6 @@ namespace Generating
             set
             {
                 max = value;
-                terrainGenerator.GenerateHeightMap(W, H, 40, -20, -20, 40, roughness, min, max);
             }
         }
         public Game()
@@ -73,7 +75,7 @@ namespace Generating
             
             if (!isCalculated)
             {
-                terrainGenerator.GenerateHeightMap(W, H, 40, 20, 10, 30, roughness, min, max);
+                terrainGenerator.GenerateHeightMap(W, H, topLeft, bottomLeft, bottomRight, topRight, roughness, min, max);
                 isCalculated = true;
             }
             //texture = AssetsLoader.LoadTexture("land.png");
@@ -107,13 +109,34 @@ namespace Generating
             {
                 string buffer = Console.ReadLine();
                 if (buffer.Contains("r "))
+                {
                     Roughness = float.Parse(buffer.Remove(0, 2));
+                }
                 else if (buffer.Contains("min "))
+                {
                     Min = float.Parse(buffer.Remove(0, 4));
+                }
                 else if (buffer.Contains("max "))
+                {
                     Max = float.Parse(buffer.Remove(0, 4));
-                else if (buffer.Contains("r"))
-                    terrainGenerator.GenerateHeightMap(W, H, 40, 20, 10, 30, roughness, min, max);
+                }
+                else if (buffer.Contains("topleft "))
+                {
+                    topLeft = float.Parse(buffer.Remove(0, 8));
+                }
+                else if (buffer.Contains("botleft "))
+                {
+                    bottomLeft = float.Parse(buffer.Remove(0, 8));
+                }
+                else if (buffer.Contains("botright "))
+                {
+                    bottomRight = float.Parse(buffer.Remove(0, 9));
+                }
+                else if (buffer.Contains("topright "))
+                {
+                    topRight = float.Parse(buffer.Remove(0, 9));
+                }
+                terrainGenerator.GenerateHeightMap(W, H, topLeft, bottomLeft, bottomRight, topRight, roughness, min, max);
                 isEdited = true;
             }
         }
@@ -126,68 +149,29 @@ namespace Generating
 
             GL.Color3(Color.Red);
             //GL.DrawElements(BeginMode.TriangleStrip, W * H + (W - 1) * (H - 2), DrawElementsType.UnsignedInt, ())
-            //for (int i = 0; i < W; i++)
-            //{
-            //    GL.Begin(BeginMode.LineStrip);
-            //    for (int j = 0; j < H; j++)
-            //    {
-            //        GL.Vertex3(i, terrainGenerator.HeightMap[i, j], j);
-            //    }
-            //    GL.End();
-            //}
-            //for (int i = 0; i < H; i++)
-            //{
-            //    GL.Begin(BeginMode.LineStrip);
-            //    for (int j = 0; j < W; j++)
-            //    {
-            //        GL.Vertex3(j, terrainGenerator.HeightMap[j, i], i);
-            //    }
-            //    GL.End();
-            //}
 
-            //for (int i = 0; i < W - 1; i++)
-            //    for (int j = 0; j < H - 1; j++)
-            //    {
-            //        float z = i * zoom;
-            //        float x = j * zoom;
-
-            //        GL.Begin(BeginMode.TriangleStrip);
-
-            //        GL.Vertex3(x, terrainGenerator.HeightMap[i, j], z);
-            //        GL.Vertex3(x + zoom, terrainGenerator.HeightMap[i, j + 1], z);
-            //        GL.Vertex3(x, terrainGenerator.HeightMap[i + 1, j], z + zoom);
-            //        GL.Vertex3(x + zoom, terrainGenerator.HeightMap[i + 1, j + 1], z + zoom);
-
-            //        GL.End();
-            //    }
             int triangleCount = 0;
+            GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Line);
             for (int i = 0; i < W - 1; i++)
                 for (int j = 0; j < H - 1; j++)
                 {
                     float z = i * zoom;
                     float x = j * zoom;
 
-                    GL.Begin(BeginMode.LineStrip);
+                    GL.Begin(BeginMode.TriangleStrip);
 
                     GL.Vertex3(x, terrainGenerator.HeightMap[i, j], z);
-                    GL.Vertex3(x + zoom, terrainGenerator.HeightMap[i + 1, j + 1], z + zoom);
-                    GL.Vertex3(x, terrainGenerator.HeightMap[i + 1, j], z + zoom);
-                    GL.Vertex3(x, terrainGenerator.HeightMap[i, j], z);
                     GL.Vertex3(x + zoom, terrainGenerator.HeightMap[i, j + 1], z);
+                    GL.Vertex3(x, terrainGenerator.HeightMap[i + 1, j], z + zoom);
                     GL.Vertex3(x + zoom, terrainGenerator.HeightMap[i + 1, j + 1], z + zoom);
 
                     GL.End();
                     triangleCount += 2;
                 }
-            GL.Color3(Color.White);
-            GL.Begin(BeginMode.Polygon);
-            GL.Vertex3(0, 0, 0);
-            GL.Vertex3(100, 0, 0);
-            GL.Vertex3(100, 0, 100);
-            GL.Vertex3(0, 0, 100);
-            GL.End();
+            GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Fill);
             GL.Flush();
             SwapBuffers();
+
             if (isRendered)
                 Console.WriteLine(triangleCount);
             isRendered = false;
