@@ -81,7 +81,8 @@ namespace Generating
         {
             Vector3[] vertices = new Vector3[Width * Height];
             uint[] indices = new uint[2 * Width * Height];
-            for (int i = 0, ver = 0, ind = 0; i < Width; i++)
+            Vector2[] texCoords = new Vector2[Width * Height];
+            for (int i = 0, ver = 0, ind = 0, tex = 0; i < Width; i++)
             {
                 float z = i * zoom;
                 for (int j = 0; j < Height; j++)
@@ -92,12 +93,14 @@ namespace Generating
                     indices[ind++] = (uint)(i * Width + j);
                     if (i != Width - 1)
                         indices[ind++] = (uint)((i + 1) * Width + j);
+                    texCoords[tex++] = new Vector2(x / (Height - 1), z / (Width - 1));
                 }
 
                 indices[ind++] = (uint)indices.Length;
             }
             terrain.BindVerticesBuffer(vertices);
             terrain.BindIndicesBuffer(indices);
+            terrain.BindTexCoordsBuffer(texCoords);
         }
 
         public void NormalizeHeightMap()

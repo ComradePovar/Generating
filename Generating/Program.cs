@@ -4,6 +4,7 @@ using OpenTK.Input;
 using OpenTK.Graphics;
 using OpenTK.Graphics.OpenGL;
 using System.Drawing;
+using Generating.Shaders;
 
 namespace Generating
 {
@@ -15,8 +16,7 @@ namespace Generating
         private int H = 65;
         TerrainGenerator terrainGenerator;
         Camera camera;
-
-        Color[,] ColorMap;
+        
         float zoom = 1f;
         private float min = 0;
         private float max = 5;
@@ -25,51 +25,39 @@ namespace Generating
         private float bottomLeft = 0;
         private float bottomRight = 0;
         private float topRight = 0;
-        private RenderMode renderMode = RenderMode.Mesh;
+        private RenderMode renderMode = RenderMode.Colored;
         private VAO terrain;
+        private ShaderProgram shaderProgram;
+        private int modelView;
+        private int projection;
+        private Matrix4 projectionMatrix;
+        Texture darkGrass;
+        Texture rock;
+        Texture snow;
 
-        public float Roughness
-        {
-            get
-            {
-                return roughness;
-            }
-            set
-            {
-                roughness = value;
-            }
-        }
-        public float Min
-        {
-            get
-            {
-                return min;
-            }
-            set
-            {
-                min = value;
-            }
-        }
-        public float Max
-        {
-            get
-            {
-                return max;
-            }
-            set
-            {
-                max = value;
-            }
-        }
+        public float Roughness { get; set; }
+        public float Min { get; set; }
+        public float Max { get; set; }
+
         public Game()
             : base(800, 600, GraphicsMode.Default, "OpenTK")
         {
             VSync = VSyncMode.On;
-            //view = new View(Vector3.Zero, 1.5f);
+
+            shaderProgram = new ShaderProgram();
+            Shader vertexShader = new Shader("shader.vert", ShaderType.VertexShader);
+            Shader fragmentShader = new Shader("shader.frag", ShaderType.FragmentShader);
+            shaderProgram.AttachShaders(vertexShader, fragmentShader);
+            shaderProgram.LinkProgram();
+
+            modelView = GL.GetUniformLocation(shaderProgram.ID, "modelViewMatrix");
+            projection = GL.GetUniformLocation(shaderProgram.ID, "projectionMatrix");
+
             terrainGenerator = new TerrainGenerator();
             camera = Camera.Instance;
+            darkGrass = new Texture("DARK_GRASS.jpg");
+            //darkGrass.SetFiltering(TextureMinFilter.Linear, TextureMagFilter.Linear);
         }
-        Matrix4 transform;
         protected override void OnLoad(EventArgs e)
         {
             base.OnLoad(e);
@@ -84,8 +72,7 @@ namespace Generating
                 
                 isCalculated = true;
             }
-            //texture = AssetsLoader.LoadTexture("land.png");
-            transform = Matrix4.Identity * Matrix4.CreateTranslation(1, 0, 0);
+
             GL.ClearColor(0.1f, 0.2f, 0.5f, 0.0f);
             GL.Enable(EnableCap.DepthTest);
         }
@@ -95,10 +82,7 @@ namespace Generating
             base.OnResize(e);
 
             GL.Viewport(ClientRectangle.X, ClientRectangle.Y, ClientRectangle.Width, ClientRectangle.Height);
-
-            Matrix4 projection = Matrix4.CreatePerspectiveFieldOfView((float)Math.PI / 4f, Width / (float)Height, 1.0f, 10000.0f);
-            GL.MatrixMode(MatrixMode.Projection);
-            GL.LoadMatrix(ref projection);
+            camera.OnResize(Width, Height);
         }
 
         protected override void OnUpdateFrame(FrameEventArgs e)
@@ -196,22 +180,14 @@ namespace Generating
                 }
             bitmap.Save("Assets/HeightMap.bmp", System.Drawing.Imaging.ImageFormat.Bmp);
         }
-        private void LoadTexture(string name)
-        {
-            Bitmap bitmap = new Bitmap("Assets/" + name);
-            ColorMap = new Color[W, H];
-            for (int i = 0; i < W; i++)
-                for (int j = 0; j < H; j++)
-                {
-                    ColorMap[i, j] = bitmap.GetPixel(i, j);
-                }
-        }
         protected override void OnRenderFrame(FrameEventArgs e)
         {
             base.OnRenderFrame(e);
            
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
             //testDraw();
+            
+
             switch (renderMode)
             {
                 case RenderMode.Mesh:
@@ -221,7 +197,7 @@ namespace Generating
                     RenderHeightMap();
                     break;
                 case RenderMode.Colored:
-                    RenderColoredHeightMap();
+                    RenderGreenHeightMap();
                     break;
                 case RenderMode.Textured:
                     RenderTexturedHeightMap();
@@ -276,28 +252,45 @@ namespace Generating
                 }
             GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Fill);
         }
-        private void RenderColoredHeightMap()
+        
+        private void RenderGreenHeightMap()
         {
+            if (isCalculated)
+            {
+                terrainGenerator.CreateMesh(zoom, terrain);
+                isCalculated = false;
+            }
             GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Fill);
-            for (int i = 0; i < W - 1; i++)
-                for (int j = 0; j < H - 1; j++)
-                {
-                    float z = i * zoom;
-                    float x = j * zoom;
+            
+            GL.Enable(EnableCap.VertexArray);
+            GL.Enable(EnableCap.IndexArray);
+            GL.Enable(EnableCap.ColorArray);
+            GL.Enable(EnableCap.PrimitiveRestart);
+            GL.PrimitiveRestartIndex(terrain.IndicesCount);
 
-                    GL.Begin(BeginMode.TriangleStrip);
-                    GL.Color3(ColorMap[i, j]);
-                    GL.Vertex3(x, terrainGenerator.HeightMap[i, j] * zoom, z);
-                    GL.Color3(ColorMap[i + 1, j]);
-                    GL.Vertex3(x + zoom, terrainGenerator.HeightMap[i, j + 1] * zoom, z);
-                    GL.Color3(ColorMap[i, j + 1]);
-                    GL.Vertex3(x, terrainGenerator.HeightMap[i + 1, j] * zoom, z + zoom);
-                    GL.Color3(ColorMap[i + 1, j + 1]);
-                    GL.Vertex3(x + zoom, terrainGenerator.HeightMap[i + 1, j + 1] * zoom, z + zoom);
+            GL.BindVertexArray(terrain.ID);
+            GL.BindTexture(TextureTarget.Texture2D, darkGrass.ID);
+            GL.BindBuffer(BufferTarget.ArrayBuffer, terrain.VerticesBuffer);
+            GL.EnableVertexAttribArray(0);
+            GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, 0, 0);
 
-                    GL.End();
-                }
-            GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Fill);
+            GL.BindBuffer(BufferTarget.ArrayBuffer, terrain.TexCoordsBuffer);
+            GL.EnableVertexAttribArray(1);
+            GL.VertexAttribPointer(1, 2, VertexAttribPointerType.Float, false, 0, 0);
+
+            GL.BindBuffer(BufferTarget.ElementArrayBuffer, terrain.IndicesBuffer);
+            
+            shaderProgram.Start();
+            GL.UniformMatrix4(projection, false, ref camera.Projection);
+            GL.UniformMatrix4(modelView, false, ref camera.ModelView);
+            GL.DrawElements(BeginMode.TriangleStrip, terrain.IndicesCount, DrawElementsType.UnsignedInt, 0);
+            shaderProgram.Stop();
+
+            GL.Disable(EnableCap.VertexArray);
+            GL.Disable(EnableCap.IndexArray);
+            GL.Disable(EnableCap.ColorArray);
+            GL.Disable(EnableCap.PrimitiveRestart);
+
         }
         private void RenderTexturedHeightMap()
         {

@@ -13,42 +13,14 @@ namespace Generating
         private Vector3 upVector;
         private float facing;
         private float pitch;
+        private int prevMouseX;
+        private int prevMouseY;
 
-        public Vector3 Eye
-        {
-            get
-            {
-                return eye;
-            }
-            set
-            {
-                eye = value;
-            }
-        }
-        public Vector3 Target
-        {
-            get
-            {
-                return target;
-            }
-            set
-            {
-                target = value;
-            }
-        }
-        public Vector3 UpVector
-        {
-            get
-            {
-                return upVector;
-            }
-            set
-            {
-                upVector = value;
-            }
-        }
         public float MovementSpeed { get; set; }
         public float RotationSpeed { get; set; }
+        public Matrix4 ModelView;
+        public Matrix4 Projection;
+
         public static Camera Instance
         {
             get
@@ -61,15 +33,22 @@ namespace Generating
 
         private Camera()
         {
-            Eye = Vector3.Zero;
-            Target = Vector3.UnitZ;
-            UpVector = Vector3.UnitY;
-            MovementSpeed = 1.0f;
-            RotationSpeed = 0.1f;
+            eye = Vector3.Zero;
+            target = Vector3.UnitZ;
+            upVector = Vector3.UnitY;
+            MovementSpeed = .5f;
+            RotationSpeed = .001f;
 
-            Matrix4 modelView = Matrix4.LookAt(Eye, Target, UpVector);
+            ModelView = Matrix4.LookAt(eye, target, upVector);
             GL.MatrixMode(MatrixMode.Modelview);
-            GL.LoadMatrix(ref modelView);
+            GL.LoadMatrix(ref ModelView);
+        }
+
+        public void OnResize(int width, int height)
+        {
+            Projection = Matrix4.CreatePerspectiveFieldOfView((float)Math.PI / 4f, width / (float)height, 1.0f, 10000.0f);
+            GL.MatrixMode(MatrixMode.Projection);
+            GL.LoadMatrix(ref Projection);
         }
 
         public void Translate(float x, float y, float z)
@@ -81,37 +60,43 @@ namespace Generating
 
         public void UpdateView(MouseState mouse, KeyboardState keyboard)
         {
-            if (mouse[MouseButton.Left])
+            if (mouse.X < prevMouseX)
             {
-                if (keyboard[Key.W] && pitch < MathHelper.PiOver2)
-                    pitch += RotationSpeed;
-                if (keyboard[Key.S] && pitch > -MathHelper.PiOver2)
-                    pitch -= RotationSpeed;
-                if (keyboard[Key.A])
-                    facing += RotationSpeed;
-                if (keyboard[Key.D])
-                    facing -= RotationSpeed;
+                facing += RotationSpeed * (prevMouseX - mouse.X);
+                prevMouseX = mouse.X;
             }
-            else
+            else if (mouse.X > prevMouseX)
             {
-                if (keyboard[Key.W])
-                    Translate(MovementSpeed * (float)Math.Sin(facing), 0, MovementSpeed * (float)Math.Cos(facing));
-                if (keyboard[Key.S])
-                    Translate(-MovementSpeed * (float)Math.Sin(facing), 0, -MovementSpeed * (float)Math.Cos(facing));
-                if (keyboard[Key.A])
-                    Translate(MovementSpeed * (float)Math.Sin(facing + MathHelper.PiOver2), 0, MovementSpeed * (float)Math.Cos(facing + MathHelper.PiOver2));
-                if (keyboard[Key.D])
-                    Translate(-MovementSpeed * (float)Math.Sin(facing + MathHelper.PiOver2), 0, -MovementSpeed * (float)Math.Cos(facing + MathHelper.PiOver2));
+                facing -= RotationSpeed * (mouse.X - prevMouseX);
+                prevMouseX = mouse.X;
             }
+            if (mouse.Y > prevMouseY && pitch >= -MathHelper.PiOver2)
+            {
+                pitch -= RotationSpeed * (mouse.Y - prevMouseY);
+                prevMouseY = mouse.Y;
+            }
+            else if (mouse.Y < prevMouseY && pitch <= MathHelper.PiOver2)
+            {
+                pitch += RotationSpeed * (prevMouseY - mouse.Y);
+                prevMouseY = mouse.Y;
+            }
+            
+            if (keyboard[Key.W])
+                Translate(MovementSpeed * (float)Math.Sin(facing), 0, MovementSpeed * (float)Math.Cos(facing));
+            if (keyboard[Key.S])
+                Translate(-MovementSpeed * (float)Math.Sin(facing), 0, -MovementSpeed * (float)Math.Cos(facing));
+            if (keyboard[Key.A])
+                Translate(MovementSpeed * (float)Math.Sin(facing + MathHelper.PiOver2), 0, MovementSpeed * (float)Math.Cos(facing + MathHelper.PiOver2));
+            if (keyboard[Key.D])
+                Translate(-MovementSpeed * (float)Math.Sin(facing + MathHelper.PiOver2), 0, -MovementSpeed * (float)Math.Cos(facing + MathHelper.PiOver2));
+            
             if (keyboard[Key.LShift])
                 Translate(0, MovementSpeed, 0);
             if (keyboard[Key.LControl])
                 Translate(0, -MovementSpeed, 0);
 
-            Matrix4 modelView = Matrix4.LookAt(Eye, Eye + new Vector3((float)Math.Sin(facing), (float)Math.Sin(pitch), (float)Math.Cos(facing)),
+            ModelView = Matrix4.LookAt(eye, eye + new Vector3((float)Math.Sin(facing), (float)Math.Sin(pitch), (float)Math.Cos(facing)),
                                                upVector);
-            GL.MatrixMode(MatrixMode.Modelview);
-            GL.LoadMatrix(ref modelView);
         }
     }
 }
