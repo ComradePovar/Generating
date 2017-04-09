@@ -47,7 +47,8 @@ namespace Generating
                 upVector = value;
             }
         }
-        public float Speed { get; set; }
+        public float MovementSpeed { get; set; }
+        public float RotationSpeed { get; set; }
         public static Camera Instance
         {
             get
@@ -63,7 +64,8 @@ namespace Generating
             Eye = Vector3.Zero;
             Target = Vector3.UnitZ;
             UpVector = Vector3.UnitY;
-            Speed = 1.0f;
+            MovementSpeed = 1.0f;
+            RotationSpeed = 0.1f;
 
             Matrix4 modelView = Matrix4.LookAt(Eye, Target, UpVector);
             GL.MatrixMode(MatrixMode.Modelview);
@@ -82,29 +84,29 @@ namespace Generating
             if (mouse[MouseButton.Left])
             {
                 if (keyboard[Key.W] && pitch < MathHelper.PiOver2)
-                    pitch += 0.1f;
+                    pitch += RotationSpeed;
                 if (keyboard[Key.S] && pitch > -MathHelper.PiOver2)
-                    pitch -= 0.1f;
+                    pitch -= RotationSpeed;
                 if (keyboard[Key.A])
-                    facing += 0.1f;
+                    facing += RotationSpeed;
                 if (keyboard[Key.D])
-                    facing -= 0.1f;
+                    facing -= RotationSpeed;
             }
             else
             {
                 if (keyboard[Key.W])
-                    Translate(Speed * (float)Math.Sin(facing), 0, Speed * (float)Math.Cos(facing));
+                    Translate(MovementSpeed * (float)Math.Sin(facing), 0, MovementSpeed * (float)Math.Cos(facing));
                 if (keyboard[Key.S])
-                    Translate(-Speed * (float)Math.Sin(facing), 0, -Speed * (float)Math.Cos(facing));
+                    Translate(-MovementSpeed * (float)Math.Sin(facing), 0, -MovementSpeed * (float)Math.Cos(facing));
                 if (keyboard[Key.A])
-                    Translate(Speed * (float)Math.Sin(facing + MathHelper.PiOver2), 0, Speed * (float)Math.Cos(facing + MathHelper.PiOver2));
+                    Translate(MovementSpeed * (float)Math.Sin(facing + MathHelper.PiOver2), 0, MovementSpeed * (float)Math.Cos(facing + MathHelper.PiOver2));
                 if (keyboard[Key.D])
-                    Translate(-Speed * (float)Math.Sin(facing + MathHelper.PiOver2), 0, -Speed * (float)Math.Cos(facing + MathHelper.PiOver2));
+                    Translate(-MovementSpeed * (float)Math.Sin(facing + MathHelper.PiOver2), 0, -MovementSpeed * (float)Math.Cos(facing + MathHelper.PiOver2));
             }
             if (keyboard[Key.LShift])
-                Translate(0, Speed, 0);
+                Translate(0, MovementSpeed, 0);
             if (keyboard[Key.LControl])
-                Translate(0, -Speed, 0);
+                Translate(0, -MovementSpeed, 0);
 
             Matrix4 modelView = Matrix4.LookAt(Eye, Eye + new Vector3((float)Math.Sin(facing), (float)Math.Sin(pitch), (float)Math.Cos(facing)),
                                                upVector);

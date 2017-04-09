@@ -11,8 +11,8 @@ namespace Generating
     class Game : GameWindow
     {
         private Texture texture;
-        private int W = 1025;
-        private int H = 1025;
+        private int W = 65;
+        private int H = 65;
         TerrainGenerator terrainGenerator;
         Camera camera;
 
@@ -227,7 +227,6 @@ namespace Generating
                     RenderTexturedHeightMap();
                     break;
             }
-            GL.Flush();
             SwapBuffers();
             
             isEdited = false;
@@ -235,7 +234,11 @@ namespace Generating
         
         private void RenderMesh()
         {
-            terrainGenerator.CreateMesh(zoom, terrain);
+            if (isCalculated)
+            {
+                terrainGenerator.CreateMesh(zoom, terrain);
+                isCalculated = false;
+            }
             GL.Color3(Color.Red);
             GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Line);
 
