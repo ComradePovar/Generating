@@ -55,7 +55,7 @@ namespace Generating
 
             terrainGenerator = new TerrainGenerator();
             camera = Camera.Instance;
-            darkGrass = new Texture("DARK_GRASS.jpg");
+            darkGrass = new Texture("grass.jpg");
             //darkGrass.SetFiltering(TextureMinFilter.Linear, TextureMagFilter.Linear);
         }
         protected override void OnLoad(EventArgs e)

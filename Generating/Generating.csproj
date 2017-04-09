@@ -87,7 +87,7 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Assets\DARK_GRASS.jpg" />
+    <EmbeddedResource Include="Assets\grass.jpg" />
     <Content Include="Assets\land.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
