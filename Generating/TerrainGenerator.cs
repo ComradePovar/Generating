@@ -110,7 +110,7 @@ namespace Generating
                     //            colors[ver] = new Vector3(89f / 255, 65f / 255, 65f / 255);
                     //     else
                     //            colors[ver] = new Vector3(216f/255, 216f/255, 216f/255);
-                    texCoords[ver++] = new Vector2(x, z); // / (Height - 1), z / (Width - 1)); // , z);
+                    texCoords[ver++] = new Vector2(x / (Height - 1), z / (Width - 1)); // , z);
                 }
 
                 indices[ind++] = (uint)indices.Length;
@@ -198,7 +198,7 @@ namespace Generating
             return new Vector3((vector1.X + vector2.X) / 2, (vector1.Y + vector2.Y) / 2, (vector1.Z + vector2.Z) / 2);
         }
 
-        public void NormalizeHeightMap()
+        public void NormalizeHeightMap(VAO terrain)
         {
             NormalizedHeightMap = new float[Width, Height];
             float max = float.MinValue, min = float.MaxValue;
@@ -214,6 +214,7 @@ namespace Generating
             for (int i = 0; i < Width; i++)
                 for (int j = 0; j < Height; j++)
                     NormalizedHeightMap[i, j] = (HeightMap[i, j] - min) / (max - min);
+            terrain.BindNormalizedHeightsBuffer(NormalizedHeightMap);
         }
         private float GetRandomFloat(float min, float max)
         {

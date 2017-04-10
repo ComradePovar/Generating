@@ -16,6 +16,7 @@ namespace Generating
         public int TexCoordsBuffer { get; private set; } = -1;
         public int NormalsBuffer { get; private set; } = -1;
         public int ColorsBuffer { get; private set; } = -1;
+        public int NormalizedHeightsBuffer { get; private set; } = -1;
 
         public int IndicesCount;
 
@@ -63,6 +64,18 @@ namespace Generating
             ColorsBuffer = GL.GenBuffer();
             GL.BindBuffer(BufferTarget.ArrayBuffer, ColorsBuffer);
             GL.BufferData(BufferTarget.ArrayBuffer, (IntPtr)(colors.Length * Vector3.SizeInBytes), colors, BufferUsageHint.StaticDraw);
+            GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
+        }
+
+        public void BindNormalizedHeightsBuffer(float[,] normalizedHeights)
+        {
+            float[] heights = new float[normalizedHeights.GetLength(0) * normalizedHeights.GetLength(1)];
+            for (int i = 0; i < normalizedHeights.GetLength(0); i++)
+                for (int j = 0; j < normalizedHeights.GetLength(1); j++)
+                    heights[i * normalizedHeights.GetLength(0) + j] = normalizedHeights[i, j];
+            NormalizedHeightsBuffer = GL.GenBuffer();
+            GL.BindBuffer(BufferTarget.ArrayBuffer, NormalizedHeightsBuffer);
+            GL.BufferData(BufferTarget.ArrayBuffer, (IntPtr)(heights.Length * sizeof(float)), heights, BufferUsageHint.StaticDraw);
             GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
         }
     }

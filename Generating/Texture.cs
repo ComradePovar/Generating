@@ -15,13 +15,14 @@ namespace Generating
     class Texture
     {
         public int ID { get; set; }
+        public int SamplerID { get; set; }
         public int Width { get; set; }
         public int Height { get; set; }
         public TextureMinFilter MinFilter { get; private set; }
         public TextureMagFilter MagFilter { get; private set; }
 
         public Bitmap bitmap;
-        private int samplerID;
+        
         
         public Texture(string textureName)
         {
@@ -32,7 +33,7 @@ namespace Generating
         {
             GL.Hint(HintTarget.PerspectiveCorrectionHint, HintMode.Nicest);
             ID = GL.GenTexture();
-            samplerID = GL.GenSampler();
+            SamplerID = GL.GenSampler();
             GL.BindTexture(TextureTarget.Texture2D, ID);
 
             bitmap = new Bitmap(Assembly.GetExecutingAssembly().GetManifestResourceStream("Generating.Assets." + textureName));
@@ -52,16 +53,15 @@ namespace Generating
                 TextureMinFilter.Linear);
             GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)
                 TextureMagFilter.Linear);
-            samplerID = GL.GenSampler();
-          //  GL.BindSampler(0, samplerID);
+
             GL.BindTexture(TextureTarget.Texture2D, 0);
         }
 
         private void SetFiltering(TextureMinFilter min, TextureMagFilter mag)
         {
             //TODO: doesn't works
-            GL.SamplerParameter(samplerID, SamplerParameter.TextureMagFilter, (int)mag);
-            GL.SamplerParameter(samplerID, SamplerParameter.TextureMinFilter, (int)min);
+            GL.SamplerParameter(SamplerID, SamplerParameter.TextureMagFilter, (int)mag);
+            GL.SamplerParameter(SamplerID, SamplerParameter.TextureMinFilter, (int)min);
             this.MinFilter = min;
             this.MagFilter = mag;
         }

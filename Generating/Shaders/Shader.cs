@@ -24,7 +24,6 @@ namespace Generating.Shaders
             ID = GL.CreateShader(type);
             GL.ShaderSource(ID, source);
             GL.CompileShader(ID);
-
             int compileStatus;
             GL.GetShader(ID, ShaderParameter.CompileStatus, out compileStatus);
             if (compileStatus == 0)

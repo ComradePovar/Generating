@@ -20,7 +20,7 @@ namespace Generating
         float zoom = 1f;
         private float min = 0;
         private float max = 5;
-        private float roughness = 1.5f;
+        private float roughness = 10f;
         private float topLeft = 0;
         private float bottomLeft = 0;
         private float bottomRight = 0;
@@ -32,17 +32,25 @@ namespace Generating
         private int modelView;
         private int projection;
         private int normalMatrix;
-        private int sampler;
+        private int sampler1;
+        private int sampler2;
+        private int texContributor1;
+        private int texContributor2;
         private int color;
         private int lightColor;
         private int lightDirection;
         private int lightAmbient;
+        private int fogDensity;
+        private int fogStart;
+        private int fogEnd;
+        private int fogColor;
+        private int fogType;//TODO: Create enum
 
         private Matrix4 projectionMatrix;
-        Texture darkGrass;
+        Texture grass;
         Texture rock;
         Texture snow;
-
+        Vector4 FogColor;
         public float Roughness { get; set; }
         public float Min { get; set; }
         public float Max { get; set; }
@@ -54,8 +62,9 @@ namespace Generating
 
             shaderProgram = new ShaderProgram();
             Shader vertexShader = new Shader("shader.vert", ShaderType.VertexShader);
-            Shader fragmentShader = new Shader("shader.frag", ShaderType.FragmentShader);
-            shaderProgram.AttachShaders(vertexShader, fragmentShader);
+            Shader fogShader = new Shader("fogShader.vert", ShaderType.VertexShader);
+            Shader fragmentShader = new Shader("mainShader.frag", ShaderType.FragmentShader);
+            shaderProgram.AttachShaders(fogShader, vertexShader, fragmentShader);
             shaderProgram.LinkProgram();
 
             modelView = GL.GetUniformLocation(shaderProgram.ID, "modelViewMatrix");
@@ -63,10 +72,16 @@ namespace Generating
             normalMatrix = GL.GetUniformLocation(shaderProgram.ID, "normalMatrix");
 
             color = GL.GetUniformLocation(shaderProgram.ID, "color");
-            sampler = GL.GetUniformLocation(shaderProgram.ID, "sampler");
+            sampler1 = GL.GetUniformLocation(shaderProgram.ID, "samplers[0]");
+            sampler2 = GL.GetUniformLocation(shaderProgram.ID, "samplers[1]");
             lightColor = GL.GetUniformLocation(shaderProgram.ID, "light.color");
             lightDirection = GL.GetUniformLocation(shaderProgram.ID, "light.direction");
             lightAmbient = GL.GetUniformLocation(shaderProgram.ID, "light.ambientIntensity");
+            fogColor = GL.GetUniformLocation(shaderProgram.ID, "fog.color");
+            fogStart = GL.GetUniformLocation(shaderProgram.ID, "fog.start");
+            fogEnd = GL.GetUniformLocation(shaderProgram.ID, "fog.end");
+            fogDensity = GL.GetUniformLocation(shaderProgram.ID, "fog.density");
+            fogType = GL.GetUniformLocation(shaderProgram.ID, "fog.type");
 
             terrainGenerator = new TerrainGenerator();
             camera = Camera.Instance;
@@ -75,7 +90,9 @@ namespace Generating
                 Color = new Vector3(1.0f, 1.0f, 1.0f),
                 AmbientIntensity = 0.25f
             };
-            darkGrass = new Texture("grass2.jpg");
+            FogColor = new Vector4(0.7f, 0.7f, 0.7f, 1.0f);
+            grass = new Texture("grass2.jpg");
+            rock = new Texture("rock.jpg");
             //darkGrass.SetFiltering(TextureMinFilter.Linear, TextureMagFilter.Linear);
         }
         protected override void OnLoad(EventArgs e)
@@ -88,7 +105,7 @@ namespace Generating
             if (!isCalculated)
             {
                 terrainGenerator.GenerateHeightMap(W, H, topLeft, bottomLeft, bottomRight, topRight, roughness, min, max);
-                terrainGenerator.NormalizeHeightMap();
+                terrainGenerator.NormalizeHeightMap(terrain);
                 
                 isCalculated = true;
             }
@@ -109,87 +126,87 @@ namespace Generating
         {
             base.OnUpdateFrame(e);
 
-            GetInput();
+            //GetInput();
             camera.UpdateView(OpenTK.Input.Mouse.GetState(), OpenTK.Input.Keyboard.GetState());
         }
         private bool isEdited = false;
-        private void GetInput()
-        {
-            if (Keyboard[Key.Tilde] && !isEdited)
-            {
-                string buffer = Console.ReadLine();
-                if (buffer.Contains("r "))
-                {
-                    Roughness = float.Parse(buffer.Remove(0, 2));
-                    terrainGenerator.GenerateHeightMap(W, H, topLeft, bottomLeft, bottomRight, topRight, roughness, min, max);
-                    terrainGenerator.NormalizeHeightMap();
-                }
-                else if (buffer.Contains("min "))
-                {
-                    Min = float.Parse(buffer.Remove(0, 4));
-                    terrainGenerator.GenerateHeightMap(W, H, topLeft, bottomLeft, bottomRight, topRight, roughness, min, max);
-                    terrainGenerator.NormalizeHeightMap();
-                }
-                else if (buffer.Contains("max "))
-                {
-                    Max = float.Parse(buffer.Remove(0, 4));
-                    terrainGenerator.GenerateHeightMap(W, H, topLeft, bottomLeft, bottomRight, topRight, roughness, min, max);
-                    terrainGenerator.NormalizeHeightMap();
-                }
-                else if (buffer.Contains("topleft "))
-                {
-                    topLeft = float.Parse(buffer.Remove(0, 8));
-                    terrainGenerator.GenerateHeightMap(W, H, topLeft, bottomLeft, bottomRight, topRight, roughness, min, max);
-                    terrainGenerator.NormalizeHeightMap();
-                }
-                else if (buffer.Contains("botleft "))
-                {
-                    bottomLeft = float.Parse(buffer.Remove(0, 8));
-                    terrainGenerator.GenerateHeightMap(W, H, topLeft, bottomLeft, bottomRight, topRight, roughness, min, max);
-                    terrainGenerator.NormalizeHeightMap();
-                }
-                else if (buffer.Contains("botright "))
-                {
-                    bottomRight = float.Parse(buffer.Remove(0, 9));
-                    terrainGenerator.GenerateHeightMap(W, H, topLeft, bottomLeft, bottomRight, topRight, roughness, min, max);
-                    terrainGenerator.NormalizeHeightMap();
-                }
-                else if (buffer.Contains("topright "))
-                {
-                    topRight = float.Parse(buffer.Remove(0, 9));
-                    terrainGenerator.GenerateHeightMap(W, H, topLeft, bottomLeft, bottomRight, topRight, roughness, min, max);
-                    terrainGenerator.NormalizeHeightMap();
-                }
-                else if (buffer.Contains("save heightmap"))
-                {
-                    SaveHeightMap();
-                }
-                else if (buffer.Contains("load texture"))
-                {
-                    texture = new Texture("land2.jpg");
-                }
-                else if (buffer.Contains("mesh"))
-                {
-                    renderMode = RenderMode.Mesh;
-                }
-                else if (buffer.Contains("heightmap"))
-                {
-                    renderMode = RenderMode.HeightMap;
-                }
-                else if (buffer.Contains("colored"))
-                {
-                    renderMode = RenderMode.Colored;
-                }
-                else if (buffer.Contains("textured"))
-                {
-                    renderMode = RenderMode.Textured;
-                } else if(buffer.Contains("lightpos "))
-                {
-                    lightTerrain.SetLightPos(float.Parse(buffer.Remove(0, 9)));
-                }
-                isEdited = true;
-            }
-        }
+        //private void GetInput()
+        //{
+        //    if (Keyboard[Key.Tilde] && !isEdited)
+        //    {
+        //        string buffer = Console.ReadLine();
+        //        if (buffer.Contains("r "))
+        //        {
+        //            Roughness = float.Parse(buffer.Remove(0, 2));
+        //            terrainGenerator.GenerateHeightMap(W, H, topLeft, bottomLeft, bottomRight, topRight, roughness, min, max);
+        //            terrainGenerator.NormalizeHeightMap();
+        //        }
+        //        else if (buffer.Contains("min "))
+        //        {
+        //            Min = float.Parse(buffer.Remove(0, 4));
+        //            terrainGenerator.GenerateHeightMap(W, H, topLeft, bottomLeft, bottomRight, topRight, roughness, min, max);
+        //            terrainGenerator.NormalizeHeightMap();
+        //        }
+        //        else if (buffer.Contains("max "))
+        //        {
+        //            Max = float.Parse(buffer.Remove(0, 4));
+        //            terrainGenerator.GenerateHeightMap(W, H, topLeft, bottomLeft, bottomRight, topRight, roughness, min, max);
+        //            terrainGenerator.NormalizeHeightMap();
+        //        }
+        //        else if (buffer.Contains("topleft "))
+        //        {
+        //            topLeft = float.Parse(buffer.Remove(0, 8));
+        //            terrainGenerator.GenerateHeightMap(W, H, topLeft, bottomLeft, bottomRight, topRight, roughness, min, max);
+        //            terrainGenerator.NormalizeHeightMap();
+        //        }
+        //        else if (buffer.Contains("botleft "))
+        //        {
+        //            bottomLeft = float.Parse(buffer.Remove(0, 8));
+        //            terrainGenerator.GenerateHeightMap(W, H, topLeft, bottomLeft, bottomRight, topRight, roughness, min, max);
+        //            terrainGenerator.NormalizeHeightMap();
+        //        }
+        //        else if (buffer.Contains("botright "))
+        //        {
+        //            bottomRight = float.Parse(buffer.Remove(0, 9));
+        //            terrainGenerator.GenerateHeightMap(W, H, topLeft, bottomLeft, bottomRight, topRight, roughness, min, max);
+        //            terrainGenerator.NormalizeHeightMap();
+        //        }
+        //        else if (buffer.Contains("topright "))
+        //        {
+        //            topRight = float.Parse(buffer.Remove(0, 9));
+        //            terrainGenerator.GenerateHeightMap(W, H, topLeft, bottomLeft, bottomRight, topRight, roughness, min, max);
+        //            terrainGenerator.NormalizeHeightMap();
+        //        }
+        //        else if (buffer.Contains("save heightmap"))
+        //        {
+        //            SaveHeightMap();
+        //        }
+        //        else if (buffer.Contains("load texture"))
+        //        {
+        //            texture = new Texture("land2.jpg");
+        //        }
+        //        else if (buffer.Contains("mesh"))
+        //        {
+        //            renderMode = RenderMode.Mesh;
+        //        }
+        //        else if (buffer.Contains("heightmap"))
+        //        {
+        //            renderMode = RenderMode.HeightMap;
+        //        }
+        //        else if (buffer.Contains("colored"))
+        //        {
+        //            renderMode = RenderMode.Colored;
+        //        }
+        //        else if (buffer.Contains("textured"))
+        //        {
+        //            renderMode = RenderMode.Textured;
+        //        } else if(buffer.Contains("lightpos "))
+        //        {
+        //            lightTerrain.SetLightPos(float.Parse(buffer.Remove(0, 9)));
+        //        }
+        //        isEdited = true;
+        //    }
+        //}
         private bool isCalculated = false;
         private void SaveHeightMap()
         {
@@ -285,7 +302,7 @@ namespace Generating
             }
             GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Fill);
 
-            //GL.Enable(EnableCap.Texture2D);
+            GL.Enable(EnableCap.Texture2D);
             GL.Enable(EnableCap.VertexArray);
             GL.Enable(EnableCap.IndexArray);
             GL.Enable(EnableCap.NormalArray);
@@ -294,8 +311,8 @@ namespace Generating
             GL.PrimitiveRestartIndex(terrain.IndicesCount);
 
             GL.BindVertexArray(terrain.ID);
-            GL.BindTexture(TextureTarget.Texture2D, darkGrass.ID);
-            GL.ActiveTexture(TextureUnit.Texture0);
+            //GL.BindTexture(TextureTarget.Texture2D, grass.ID);
+
             GL.BindBuffer(BufferTarget.ArrayBuffer, terrain.VerticesBuffer);
             //GL.VertexPointer(3, VertexPointerType.Float, 0, 0);
             GL.EnableVertexAttribArray(0);
@@ -315,6 +332,17 @@ namespace Generating
             GL.EnableVertexAttribArray(2);
             GL.VertexAttribPointer(2, 3, VertexAttribPointerType.Float, false, 0, 0);
 
+            GL.BindBuffer(BufferTarget.ArrayBuffer, terrain.NormalizedHeightsBuffer);
+            GL.EnableVertexAttribArray(3);
+            GL.VertexAttribPointer(3, 1, VertexAttribPointerType.Float, false, 0, 0);
+
+
+            GL.ActiveTexture(TextureUnit.Texture0);
+            GL.BindTexture(TextureTarget.Texture2D, rock.ID);
+            GL.BindSampler((int)TextureUnit.Texture0, rock.SamplerID);
+            GL.ActiveTexture(TextureUnit.Texture1);
+            GL.BindTexture(TextureTarget.Texture2D, grass.ID);
+            GL.BindSampler((int)TextureUnit.Texture1, grass.SamplerID);
             shaderProgram.Start();
             Matrix4 testMatrix = Matrix4.Identity;
             testMatrix.Invert();
@@ -323,11 +351,17 @@ namespace Generating
             GL.UniformMatrix4(projection, false, ref camera.Projection);
             GL.UniformMatrix4(modelView, false, ref camera.ModelView);
             GL.UniformMatrix4(normalMatrix, false, ref testMatrix);
-            GL.Uniform1(sampler, 0);
+            GL.Uniform1(sampler1, 0);
+            GL.Uniform1(sampler2, 1);
             GL.Uniform4(color, new Vector4(1.0f, 1.0f, 1.0f, 1.0f));
             GL.Uniform3(lightColor, ref lightTerrain.Color);
             GL.Uniform3(lightDirection, ref lightTerrain.Direction);
             GL.Uniform1(lightAmbient, lightTerrain.AmbientIntensity);
+            GL.Uniform4(fogColor, ref FogColor);
+            GL.Uniform1(fogDensity, 0.005f);
+            GL.Uniform1(fogStart, 30.0f);
+            GL.Uniform1(fogEnd, 100.0f);
+            GL.Uniform1(fogType, 2);
 
             GL.DrawElements(BeginMode.TriangleStrip, terrain.IndicesCount, DrawElementsType.UnsignedInt, 0);
             shaderProgram.Stop();

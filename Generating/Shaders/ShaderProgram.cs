@@ -41,6 +41,12 @@ namespace Generating.Shaders
         public void LinkProgram()
         {
             GL.LinkProgram(ID);
+            int linkStatus = 0;
+            GL.GetProgram(ID, ProgramParameter.LinkStatus, out linkStatus);
+            if (linkStatus == 0)
+            {
+                throw new Exception(GL.GetProgramInfoLog(ID)); //TODO: create custom exception
+            }
         }
 
         public void Start()
