@@ -82,18 +82,30 @@ namespace Generating
             Vector3[] vertices = new Vector3[Width * Height];
             uint[] indices = new uint[2 * Width * Height];
             Vector2[] texCoords = new Vector2[Width * Height];
-            for (int i = 0, ver = 0, ind = 0, tex = 0; i < Width; i++)
+            Vector3[] colors = new Vector3[Width * Height];
+            for (int i = 0, ver = 0, ind = 0; i < Width; i++)
             {
                 float z = i * zoom;
                 for (int j = 0; j < Height; j++)
                 {
                     float x = j * zoom;
 
-                    vertices[ver++] = new Vector3(x, HeightMap[i, j] * zoom, z);
+                    vertices[ver] = new Vector3(x, HeightMap[i, j] * zoom, z);
                     indices[ind++] = (uint)(i * Width + j);
                     if (i != Width - 1)
                         indices[ind++] = (uint)((i + 1) * Width + j);
-                    texCoords[tex++] = new Vector2(x / (Height - 1), z / (Width - 1));
+                    if (NormalizedHeightMap[i, j] < 0.33f)
+                    {
+                            colors[ver] = new Vector3(0f, 132f / 255, 0f);
+                    }
+                    else if (NormalizedHeightMap[i, j] < 0.66f)
+                        colors[ver] = new Vector3(132f/255, 132f/255, 132f/255);
+                    else if (Math.Abs(NormalizedHeightMap[(i + 1) % Width, j] - NormalizedHeightMap[i, j]) > 0.03 ||
+                             Math.Abs(NormalizedHeightMap[i, (j + 1) % Height] - NormalizedHeightMap[i, j]) > 0.03f)
+                                colors[ver] = new Vector3(89f / 255, 65f / 255, 65f / 255);
+                         else
+                                colors[ver] = new Vector3(216f/255, 216f/255, 216f/255);
+                    texCoords[ver++] = new Vector2(x / (Height - 1), z / (Width - 1));
                 }
 
                 indices[ind++] = (uint)indices.Length;
@@ -101,6 +113,7 @@ namespace Generating
             terrain.BindVerticesBuffer(vertices);
             terrain.BindIndicesBuffer(indices);
             terrain.BindTexCoordsBuffer(texCoords);
+            terrain.BindColorsBuffer(colors);
         }
 
         public void NormalizeHeightMap()

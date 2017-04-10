@@ -20,7 +20,7 @@ namespace Generating
         float zoom = 1f;
         private float min = 0;
         private float max = 5;
-        private float roughness = 0;
+        private float roughness = 3;
         private float topLeft = 0;
         private float bottomLeft = 0;
         private float bottomRight = 0;
@@ -279,8 +279,10 @@ namespace Generating
             GL.VertexAttribPointer(1, 2, VertexAttribPointerType.Float, false, 0, 0);
 
             GL.BindBuffer(BufferTarget.ElementArrayBuffer, terrain.IndicesBuffer);
-            
-            shaderProgram.Start();
+            GL.BindBuffer(BufferTarget.ArrayBuffer, terrain.ColorsBuffer);
+            GL.ColorPointer(3, ColorPointerType.Float, 0, 0);
+
+            //shaderProgram.Start();
             GL.UniformMatrix4(projection, false, ref camera.Projection);
             GL.UniformMatrix4(modelView, false, ref camera.ModelView);
             GL.DrawElements(BeginMode.TriangleStrip, terrain.IndicesCount, DrawElementsType.UnsignedInt, 0);

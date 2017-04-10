@@ -33,8 +33,11 @@ namespace Generating
 
         private Camera()
         {
-            eye = Vector3.Zero;
-            target = Vector3.UnitZ;
+            //eye = Vector3.Zero;
+            //target = Vector3.UnitZ;
+            //upVector = Vector3.UnitY;
+            eye = new Vector3(30, 40, -30);
+            target = new Vector3(30, 0, 30);
             upVector = Vector3.UnitY;
             MovementSpeed = .5f;
             RotationSpeed = .001f;
