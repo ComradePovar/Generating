@@ -20,7 +20,7 @@ namespace Generating
         float zoom = 1f;
         private float min = 0;
         private float max = 5;
-        private float roughness = 10f;
+        private float roughness =20f;
         private float topLeft = 0;
         private float bottomLeft = 0;
         private float bottomRight = 0;
@@ -31,11 +31,8 @@ namespace Generating
         private Light lightTerrain;
         private int modelView;
         private int projection;
-        private int normalMatrix;
         private int sampler1;
         private int sampler2;
-        private int texContributor1;
-        private int texContributor2;
         private int color;
         private int lightColor;
         private int lightDirection;
@@ -69,7 +66,6 @@ namespace Generating
 
             modelView = GL.GetUniformLocation(shaderProgram.ID, "modelViewMatrix");
             projection = GL.GetUniformLocation(shaderProgram.ID, "projectionMatrix");
-            normalMatrix = GL.GetUniformLocation(shaderProgram.ID, "normalMatrix");
 
             color = GL.GetUniformLocation(shaderProgram.ID, "color");
             sampler1 = GL.GetUniformLocation(shaderProgram.ID, "samplers[0]");
@@ -344,13 +340,9 @@ namespace Generating
             GL.BindTexture(TextureTarget.Texture2D, grass.ID);
             GL.BindSampler((int)TextureUnit.Texture1, grass.SamplerID);
             shaderProgram.Start();
-            Matrix4 testMatrix = Matrix4.Identity;
-            testMatrix.Invert();
-            testMatrix.Transpose();
 
             GL.UniformMatrix4(projection, false, ref camera.Projection);
             GL.UniformMatrix4(modelView, false, ref camera.ModelView);
-            GL.UniformMatrix4(normalMatrix, false, ref testMatrix);
             GL.Uniform1(sampler1, 0);
             GL.Uniform1(sampler2, 1);
             GL.Uniform4(color, new Vector4(1.0f, 1.0f, 1.0f, 1.0f));
