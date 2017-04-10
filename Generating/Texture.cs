@@ -45,14 +45,15 @@ namespace Generating
             bitmap.UnlockBits(data);
 
             GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)
-                TextureWrapMode.Clamp);
+                TextureWrapMode.MirroredRepeat);
             GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)
-                TextureWrapMode.Clamp);
+                TextureWrapMode.MirroredRepeat);
             GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)
                 TextureMinFilter.Linear);
             GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)
                 TextureMagFilter.Linear);
             samplerID = GL.GenSampler();
+          //  GL.BindSampler(0, samplerID);
             GL.BindTexture(TextureTarget.Texture2D, 0);
         }
 

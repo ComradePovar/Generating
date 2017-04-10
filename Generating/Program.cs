@@ -12,15 +12,15 @@ namespace Generating
     class Game : GameWindow
     {
         private Texture texture;
-        private int W = 65;
-        private int H = 65;
+        private int W = 513;
+        private int H = 513;
         TerrainGenerator terrainGenerator;
         Camera camera;
         
         float zoom = 1f;
         private float min = 0;
         private float max = 5;
-        private float roughness = 3;
+        private float roughness = 1.5f;
         private float topLeft = 0;
         private float bottomLeft = 0;
         private float bottomRight = 0;
@@ -28,8 +28,16 @@ namespace Generating
         private RenderMode renderMode = RenderMode.Colored;
         private VAO terrain;
         private ShaderProgram shaderProgram;
+        private Light lightTerrain;
         private int modelView;
         private int projection;
+        private int normalMatrix;
+        private int sampler;
+        private int color;
+        private int lightColor;
+        private int lightDirection;
+        private int lightAmbient;
+
         private Matrix4 projectionMatrix;
         Texture darkGrass;
         Texture rock;
@@ -52,10 +60,22 @@ namespace Generating
 
             modelView = GL.GetUniformLocation(shaderProgram.ID, "modelViewMatrix");
             projection = GL.GetUniformLocation(shaderProgram.ID, "projectionMatrix");
+            normalMatrix = GL.GetUniformLocation(shaderProgram.ID, "normalMatrix");
+
+            color = GL.GetUniformLocation(shaderProgram.ID, "color");
+            sampler = GL.GetUniformLocation(shaderProgram.ID, "sampler");
+            lightColor = GL.GetUniformLocation(shaderProgram.ID, "light.color");
+            lightDirection = GL.GetUniformLocation(shaderProgram.ID, "light.direction");
+            lightAmbient = GL.GetUniformLocation(shaderProgram.ID, "light.ambientIntensity");
 
             terrainGenerator = new TerrainGenerator();
             camera = Camera.Instance;
-            darkGrass = new Texture("grass.jpg");
+            lightTerrain = new Light(-45.0f)
+            {
+                Color = new Vector3(1.0f, 1.0f, 1.0f),
+                AmbientIntensity = 0.25f
+            };
+            darkGrass = new Texture("grass2.jpg");
             //darkGrass.SetFiltering(TextureMinFilter.Linear, TextureMagFilter.Linear);
         }
         protected override void OnLoad(EventArgs e)
@@ -163,6 +183,9 @@ namespace Generating
                 else if (buffer.Contains("textured"))
                 {
                     renderMode = RenderMode.Textured;
+                } else if(buffer.Contains("lightpos "))
+                {
+                    lightTerrain.SetLightPos(float.Parse(buffer.Remove(0, 9)));
                 }
                 isEdited = true;
             }
@@ -261,30 +284,51 @@ namespace Generating
                 isCalculated = false;
             }
             GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Fill);
-            
+
+            //GL.Enable(EnableCap.Texture2D);
             GL.Enable(EnableCap.VertexArray);
             GL.Enable(EnableCap.IndexArray);
-            GL.Enable(EnableCap.ColorArray);
+            GL.Enable(EnableCap.NormalArray);
+           // GL.Enable(EnableCap.ColorArray);
             GL.Enable(EnableCap.PrimitiveRestart);
             GL.PrimitiveRestartIndex(terrain.IndicesCount);
 
             GL.BindVertexArray(terrain.ID);
             GL.BindTexture(TextureTarget.Texture2D, darkGrass.ID);
+            GL.ActiveTexture(TextureUnit.Texture0);
             GL.BindBuffer(BufferTarget.ArrayBuffer, terrain.VerticesBuffer);
+            //GL.VertexPointer(3, VertexPointerType.Float, 0, 0);
             GL.EnableVertexAttribArray(0);
             GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, 0, 0);
 
             GL.BindBuffer(BufferTarget.ArrayBuffer, terrain.TexCoordsBuffer);
+            //GL.TexCoordPointer(2, TexCoordPointerType.Float, 0, 0);
             GL.EnableVertexAttribArray(1);
             GL.VertexAttribPointer(1, 2, VertexAttribPointerType.Float, false, 0, 0);
 
             GL.BindBuffer(BufferTarget.ElementArrayBuffer, terrain.IndicesBuffer);
-            GL.BindBuffer(BufferTarget.ArrayBuffer, terrain.ColorsBuffer);
-            GL.ColorPointer(3, ColorPointerType.Float, 0, 0);
 
-            //shaderProgram.Start();
+            //GL.BindBuffer(BufferTarget.ArrayBuffer, terrain.ColorsBuffer);
+            //GL.ColorPointer(3, ColorPointerType.Float, 0, 0);
+
+            GL.BindBuffer(BufferTarget.ArrayBuffer, terrain.NormalsBuffer);
+            GL.EnableVertexAttribArray(2);
+            GL.VertexAttribPointer(2, 3, VertexAttribPointerType.Float, false, 0, 0);
+
+            shaderProgram.Start();
+            Matrix4 testMatrix = Matrix4.Identity;
+            testMatrix.Invert();
+            testMatrix.Transpose();
+
             GL.UniformMatrix4(projection, false, ref camera.Projection);
             GL.UniformMatrix4(modelView, false, ref camera.ModelView);
+            GL.UniformMatrix4(normalMatrix, false, ref testMatrix);
+            GL.Uniform1(sampler, 0);
+            GL.Uniform4(color, new Vector4(1.0f, 1.0f, 1.0f, 1.0f));
+            GL.Uniform3(lightColor, ref lightTerrain.Color);
+            GL.Uniform3(lightDirection, ref lightTerrain.Direction);
+            GL.Uniform1(lightAmbient, lightTerrain.AmbientIntensity);
+
             GL.DrawElements(BeginMode.TriangleStrip, terrain.IndicesCount, DrawElementsType.UnsignedInt, 0);
             shaderProgram.Stop();
 
@@ -292,7 +336,7 @@ namespace Generating
             GL.Disable(EnableCap.IndexArray);
             GL.Disable(EnableCap.ColorArray);
             GL.Disable(EnableCap.PrimitiveRestart);
-
+            GL.Disable(EnableCap.NormalArray);
         }
         private void RenderTexturedHeightMap()
         {

@@ -52,7 +52,10 @@ namespace Generating
 
         public void BindNormalsBuffer(Vector3[] normals)
         {
-
+            NormalsBuffer = GL.GenBuffer();
+            GL.BindBuffer(BufferTarget.ArrayBuffer, NormalsBuffer);
+            GL.BufferData(BufferTarget.ArrayBuffer, (IntPtr)(normals.Length * Vector3.SizeInBytes), normals, BufferUsageHint.StaticDraw);
+            GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
         }
 
         public void BindColorsBuffer(Vector3[] colors)

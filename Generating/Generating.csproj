@@ -53,6 +53,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Light.cs" />
     <Compile Include="Shaders\Shader.cs" />
     <Compile Include="Shaders\ShaderProgram.cs" />
     <Compile Include="Texture.cs" />
@@ -87,7 +88,9 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="Assets\land2.jpg" />
     <EmbeddedResource Include="Assets\grass.jpg" />
+    <EmbeddedResource Include="Assets\grass2.jpg" />
     <Content Include="Assets\land.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
