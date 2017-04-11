@@ -20,7 +20,7 @@ namespace Generating
         float zoom = 1f;
         private float min = 0;
         private float max = 5;
-        private float roughness =20f;
+        private float roughness = 19f;
         private float topLeft = 0;
         private float bottomLeft = 0;
         private float bottomRight = 0;
@@ -122,87 +122,42 @@ namespace Generating
         {
             base.OnUpdateFrame(e);
 
-            //GetInput();
+            GetInput();
             camera.UpdateView(OpenTK.Input.Mouse.GetState(), OpenTK.Input.Keyboard.GetState());
         }
         private bool isEdited = false;
-        //private void GetInput()
-        //{
-        //    if (Keyboard[Key.Tilde] && !isEdited)
-        //    {
-        //        string buffer = Console.ReadLine();
-        //        if (buffer.Contains("r "))
-        //        {
-        //            Roughness = float.Parse(buffer.Remove(0, 2));
-        //            terrainGenerator.GenerateHeightMap(W, H, topLeft, bottomLeft, bottomRight, topRight, roughness, min, max);
-        //            terrainGenerator.NormalizeHeightMap();
-        //        }
-        //        else if (buffer.Contains("min "))
-        //        {
-        //            Min = float.Parse(buffer.Remove(0, 4));
-        //            terrainGenerator.GenerateHeightMap(W, H, topLeft, bottomLeft, bottomRight, topRight, roughness, min, max);
-        //            terrainGenerator.NormalizeHeightMap();
-        //        }
-        //        else if (buffer.Contains("max "))
-        //        {
-        //            Max = float.Parse(buffer.Remove(0, 4));
-        //            terrainGenerator.GenerateHeightMap(W, H, topLeft, bottomLeft, bottomRight, topRight, roughness, min, max);
-        //            terrainGenerator.NormalizeHeightMap();
-        //        }
-        //        else if (buffer.Contains("topleft "))
-        //        {
-        //            topLeft = float.Parse(buffer.Remove(0, 8));
-        //            terrainGenerator.GenerateHeightMap(W, H, topLeft, bottomLeft, bottomRight, topRight, roughness, min, max);
-        //            terrainGenerator.NormalizeHeightMap();
-        //        }
-        //        else if (buffer.Contains("botleft "))
-        //        {
-        //            bottomLeft = float.Parse(buffer.Remove(0, 8));
-        //            terrainGenerator.GenerateHeightMap(W, H, topLeft, bottomLeft, bottomRight, topRight, roughness, min, max);
-        //            terrainGenerator.NormalizeHeightMap();
-        //        }
-        //        else if (buffer.Contains("botright "))
-        //        {
-        //            bottomRight = float.Parse(buffer.Remove(0, 9));
-        //            terrainGenerator.GenerateHeightMap(W, H, topLeft, bottomLeft, bottomRight, topRight, roughness, min, max);
-        //            terrainGenerator.NormalizeHeightMap();
-        //        }
-        //        else if (buffer.Contains("topright "))
-        //        {
-        //            topRight = float.Parse(buffer.Remove(0, 9));
-        //            terrainGenerator.GenerateHeightMap(W, H, topLeft, bottomLeft, bottomRight, topRight, roughness, min, max);
-        //            terrainGenerator.NormalizeHeightMap();
-        //        }
-        //        else if (buffer.Contains("save heightmap"))
-        //        {
-        //            SaveHeightMap();
-        //        }
-        //        else if (buffer.Contains("load texture"))
-        //        {
-        //            texture = new Texture("land2.jpg");
-        //        }
-        //        else if (buffer.Contains("mesh"))
-        //        {
-        //            renderMode = RenderMode.Mesh;
-        //        }
-        //        else if (buffer.Contains("heightmap"))
-        //        {
-        //            renderMode = RenderMode.HeightMap;
-        //        }
-        //        else if (buffer.Contains("colored"))
-        //        {
-        //            renderMode = RenderMode.Colored;
-        //        }
-        //        else if (buffer.Contains("textured"))
-        //        {
-        //            renderMode = RenderMode.Textured;
-        //        } else if(buffer.Contains("lightpos "))
-        //        {
-        //            lightTerrain.SetLightPos(float.Parse(buffer.Remove(0, 9)));
-        //        }
-        //        isEdited = true;
-        //    }
-        //}
+        private void GetInput()
+        {
+            if (Keyboard[Key.Tilde] && !isEdited)
+            {
+                string buffer = Console.ReadLine();
+                if (buffer.Contains("save heightmap"))
+                {
+                    SaveHeightMap();
+                }
+                else if (buffer.Contains("load texture"))
+                {
+                    texture = new Texture("land2.jpg");
+                }
+                else if (buffer.Contains("mesh"))
+                {
+                    renderMode = RenderMode.Mesh;
+                }
+                else if (buffer.Contains("heightmap"))
+                {
+                    renderMode = RenderMode.HeightMap;
+                }
+                else if (buffer.Contains("colored"))
+                {
+                    renderMode = RenderMode.Colored;
+                }
+                else if (buffer.Contains("textured"))
+                {
+                    renderMode = RenderMode.Textured;
+                }
+                isEdited = true;
+            }
+        }
         private bool isCalculated = false;
         private void SaveHeightMap()
         {
@@ -350,13 +305,13 @@ namespace Generating
             GL.Uniform3(lightDirection, ref lightTerrain.Direction);
             GL.Uniform1(lightAmbient, lightTerrain.AmbientIntensity);
             GL.Uniform4(fogColor, ref FogColor);
-            GL.Uniform1(fogDensity, 0.005f);
+            GL.Uniform1(fogDensity, 0.001f);
             GL.Uniform1(fogStart, 30.0f);
             GL.Uniform1(fogEnd, 100.0f);
             GL.Uniform1(fogType, 2);
 
             GL.DrawElements(BeginMode.TriangleStrip, terrain.IndicesCount, DrawElementsType.UnsignedInt, 0);
-            shaderProgram.Stop();
+            //shaderProgram.Stop();
 
             GL.Disable(EnableCap.VertexArray);
             GL.Disable(EnableCap.IndexArray);

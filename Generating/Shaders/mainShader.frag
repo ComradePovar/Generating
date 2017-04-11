@@ -44,7 +44,7 @@ void main()
 
 	float fogCoord = abs(eyeSpacePosition.z / eyeSpacePosition.w);
 	//Fog, don't need yet
-	//outputColor = mix(outputColor, fog.color, getFogFactor(fog, fogCoord));
+	outputColor = mix(outputColor, fog.color, getFogFactor(fog, fogCoord));
 }
 
 float getFogFactor(Fog fog, float coord)
