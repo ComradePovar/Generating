@@ -110,7 +110,7 @@ namespace Generating
                     //            colors[ver] = new Vector3(89f / 255, 65f / 255, 65f / 255);
                     //     else
                     //            colors[ver] = new Vector3(216f/255, 216f/255, 216f/255);
-                    texCoords[ver++] = new Vector2(x / (Height - 1), z / (Width - 1)); // , z);
+                    texCoords[ver++] = new Vector2(x * 20 / (Height-1), z * 20/(Width-1));/// (Height - 1), z / (Width - 1)); // , z);
                 }
 
                 indices[ind++] = (uint)indices.Length;

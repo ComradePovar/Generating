@@ -12,15 +12,15 @@ namespace Generating
     class Game : GameWindow
     {
         private Texture texture;
-        private int W = 513;
-        private int H = 513;
+        private int W = 1025;
+        private int H = 1025;
         TerrainGenerator terrainGenerator;
         Camera camera;
         
         float zoom = 1f;
         private float min = 0;
         private float max = 5;
-        private float roughness = 19f;
+        private float roughness = 30f;
         private float topLeft = 0;
         private float bottomLeft = 0;
         private float bottomRight = 0;
@@ -254,9 +254,9 @@ namespace Generating
             GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Fill);
 
             GL.Enable(EnableCap.Texture2D);
-            GL.Enable(EnableCap.VertexArray);
-            GL.Enable(EnableCap.IndexArray);
-            GL.Enable(EnableCap.NormalArray);
+           // GL.Enable(EnableCap.VertexArray);
+           // GL.Enable(EnableCap.IndexArray);
+           // GL.Enable(EnableCap.NormalArray);
            // GL.Enable(EnableCap.ColorArray);
             GL.Enable(EnableCap.PrimitiveRestart);
             GL.PrimitiveRestartIndex(terrain.IndicesCount);

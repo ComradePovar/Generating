@@ -40,20 +40,27 @@ namespace Generating
             BitmapData data = bitmap.LockBits(new Rectangle(0, 0, bitmap.Width, bitmap.Height), ImageLockMode.ReadOnly,
                 System.Drawing.Imaging.PixelFormat.Format32bppArgb);
 
-            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, data.Width, data.Height, 0,
-                OpenTK.Graphics.OpenGL.PixelFormat.Rgba, PixelType.UnsignedByte, data.Scan0);
 
-            bitmap.UnlockBits(data);
-
+            int maxLevels = 5;
+            int t = 1;
+            GL.TexParameterI(TextureTarget.Texture2D, TextureParameterName.TextureMaxLevel, ref maxLevels);
+            GL.TexParameterI(TextureTarget.Texture2D, TextureParameterName.GenerateMipmap, ref t);
             GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)
                 TextureWrapMode.MirroredRepeat);
             GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)
                 TextureWrapMode.MirroredRepeat);
             GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)
-                TextureMinFilter.Linear);
+                TextureMinFilter.LinearMipmapLinear);
             GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)
                 TextureMagFilter.Linear);
+            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, data.Width, data.Height, 0,
+                OpenTK.Graphics.OpenGL.PixelFormat.Rgba, PixelType.UnsignedByte, data.Scan0);
 
+            
+            
+
+            //GL.TexParameterI(TextureTarget.Texture2D, TextureParameterName.GenerateMipmap, )
+            bitmap.UnlockBits(data);
             GL.BindTexture(TextureTarget.Texture2D, 0);
         }
 
