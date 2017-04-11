@@ -11,13 +11,29 @@ namespace Generating.Shaders
     class ShaderProgram : IDisposable
     {
         public int ID { get; private set; }
-        public List<int> shadersID;
+        public Dictionary<int, Shader> Shaders { get; }
+        public Dictionary<string, int> Uniforms { get; }
+        public Dictionary<string, int> AttribLocation { get; }
         public bool IsActive { get; private set; }
+
+        public Shader this[int id]
+        {
+            get
+            {
+                return Shaders[id];
+            }
+            set
+            {
+                Shaders[id] = value;
+            }
+        }
 
         public ShaderProgram()
         {
             ID = GL.CreateProgram();
-            shadersID = new List<int>();
+            Shaders = new Dictionary<int, Shader>();
+            Uniforms = new Dictionary<string, int>();
+            AttribLocation = new Dictionary<string, int>();
         }
 
         public void AttachShaders(params Shader[] shaders)
@@ -25,16 +41,24 @@ namespace Generating.Shaders
             foreach (Shader shader in shaders)
             {
                 GL.AttachShader(ID, shader.ID);
-                shadersID.Add(shader.ID);
+                this.Shaders.Add(shader.ID, shader);
+                foreach (KeyValuePair<string, int> pair in shader.Uniforms)
+                    this.Uniforms.Add(pair.Key, pair.Value);
+                foreach (KeyValuePair<string, int> pair in shader.AttribLocation)
+                    this.AttribLocation[pair.Key] = pair.Value;
             }
         }
         
-        public void DetachShader(params Shader[] shaders)
+        public void DetachShaders(params Shader[] shaders)
         {
             foreach (Shader shader in shaders)
             {
                 GL.DetachShader(ID, shader.ID);
-                shadersID.Remove(shader.ID);
+                this.Shaders.Remove(shader.ID);
+                foreach (string attribute in shader.Uniforms.Keys)
+                    this.Uniforms.Remove(attribute);
+                foreach (string attribute in shader.AttribLocation.Keys)
+                    this.AttribLocation.Remove(attribute);
             }
         }
 
@@ -63,7 +87,7 @@ namespace Generating.Shaders
 
         public void Dispose()
         {
-            foreach(int shaderId in shadersID)
+            foreach(int shaderId in Shaders.Keys)
             {
                 GL.DetachShader(ID, shaderId);
             }

@@ -42,9 +42,9 @@ namespace Generating
 
 
             int maxLevels = 5;
-            int t = 1;
+            int @true = 1;
             GL.TexParameterI(TextureTarget.Texture2D, TextureParameterName.TextureMaxLevel, ref maxLevels);
-            GL.TexParameterI(TextureTarget.Texture2D, TextureParameterName.GenerateMipmap, ref t);
+            GL.TexParameterI(TextureTarget.Texture2D, TextureParameterName.GenerateMipmap, ref @true);
             GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)
                 TextureWrapMode.MirroredRepeat);
             GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)

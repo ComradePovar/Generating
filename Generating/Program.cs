@@ -8,7 +8,7 @@ using Generating.Shaders;
 
 namespace Generating
 {
-    enum RenderMode { Mesh, HeightMap, Colored, Textured }
+    enum RenderMode { Mesh, Textured }
     class Game : GameWindow
     {
         private Texture texture;
@@ -25,28 +25,13 @@ namespace Generating
         private float bottomLeft = 0;
         private float bottomRight = 0;
         private float topRight = 0;
-        private RenderMode renderMode = RenderMode.Colored;
+        private RenderMode renderMode = RenderMode.Textured;
         private VAO terrain;
         private ShaderProgram shaderProgram;
-        private Light lightTerrain;
-        private int modelView;
-        private int projection;
-        private int sampler1;
-        private int sampler2;
-        private int color;
-        private int lightColor;
-        private int lightDirection;
-        private int lightAmbient;
-        private int fogDensity;
-        private int fogStart;
-        private int fogEnd;
-        private int fogColor;
-        private int fogType;//TODO: Create enum
+        private Light light;
 
-        private Matrix4 projectionMatrix;
         Texture grass;
         Texture rock;
-        Texture snow;
         Vector4 FogColor;
         public float Roughness { get; set; }
         public float Min { get; set; }
@@ -63,31 +48,35 @@ namespace Generating
             Shader fragmentShader = new Shader("mainShader.frag", ShaderType.FragmentShader);
             shaderProgram.AttachShaders(fogShader, vertexShader, fragmentShader);
             shaderProgram.LinkProgram();
+            
+            shaderProgram.Uniforms["modelViewMatrix"] = GL.GetUniformLocation(shaderProgram.ID, "modelViewMatrix");
+            shaderProgram.Uniforms["projectionMatrix"] = GL.GetUniformLocation(shaderProgram.ID, "projectionMatrix");
+            shaderProgram.Uniforms["color"] = GL.GetUniformLocation(shaderProgram.ID, "color");
+            shaderProgram.Uniforms["samplers[0]"] = GL.GetUniformLocation(shaderProgram.ID, "samplers[0]");
+            shaderProgram.Uniforms["samplers[1]"] = GL.GetUniformLocation(shaderProgram.ID, "samplers[1]");
+            shaderProgram.Uniforms["light.color"] = GL.GetUniformLocation(shaderProgram.ID, "light.color");
+            shaderProgram.Uniforms["light.direction"] = GL.GetUniformLocation(shaderProgram.ID, "light.direction");
+            shaderProgram.Uniforms["light.ambientIntensity"] = GL.GetUniformLocation(shaderProgram.ID, "light.ambientIntensity");
+            shaderProgram.Uniforms["fog.color"] = GL.GetUniformLocation(shaderProgram.ID, "fog.color");
+            shaderProgram.Uniforms["fog.start"] = GL.GetUniformLocation(shaderProgram.ID, "fog.start");
+            shaderProgram.Uniforms["fog.end"] = GL.GetUniformLocation(shaderProgram.ID, "fog.end");
+            shaderProgram.Uniforms["fog.density"] = GL.GetUniformLocation(shaderProgram.ID, "fog.density");
+            shaderProgram.Uniforms["fog.type"] = GL.GetUniformLocation(shaderProgram.ID, "fog.type");
 
-            modelView = GL.GetUniformLocation(shaderProgram.ID, "modelViewMatrix");
-            projection = GL.GetUniformLocation(shaderProgram.ID, "projectionMatrix");
-
-            color = GL.GetUniformLocation(shaderProgram.ID, "color");
-            sampler1 = GL.GetUniformLocation(shaderProgram.ID, "samplers[0]");
-            sampler2 = GL.GetUniformLocation(shaderProgram.ID, "samplers[1]");
-            lightColor = GL.GetUniformLocation(shaderProgram.ID, "light.color");
-            lightDirection = GL.GetUniformLocation(shaderProgram.ID, "light.direction");
-            lightAmbient = GL.GetUniformLocation(shaderProgram.ID, "light.ambientIntensity");
-            fogColor = GL.GetUniformLocation(shaderProgram.ID, "fog.color");
-            fogStart = GL.GetUniformLocation(shaderProgram.ID, "fog.start");
-            fogEnd = GL.GetUniformLocation(shaderProgram.ID, "fog.end");
-            fogDensity = GL.GetUniformLocation(shaderProgram.ID, "fog.density");
-            fogType = GL.GetUniformLocation(shaderProgram.ID, "fog.type");
+            shaderProgram.AttribLocation["inPosition"] = GL.GetAttribLocation(shaderProgram.ID, "inPosition");
+            shaderProgram.AttribLocation["inCoord"] = GL.GetAttribLocation(shaderProgram.ID, "inCoord");
+            shaderProgram.AttribLocation["inNormal"] = GL.GetAttribLocation(shaderProgram.ID, "inNormal");
+            shaderProgram.AttribLocation["inNormalizedHeight"] = GL.GetAttribLocation(shaderProgram.ID, "inNormalizedHeight");
 
             terrainGenerator = new TerrainGenerator();
             camera = Camera.Instance;
-            lightTerrain = new Light(-45.0f)
+            light = new Light(-45.0f)
             {
                 Color = new Vector3(1.0f, 1.0f, 1.0f),
                 AmbientIntensity = 0.25f
             };
             FogColor = new Vector4(0.7f, 0.7f, 0.7f, 1.0f);
-            grass = new Texture("grass2.jpg");
+            grass = new Texture("grass.jpg");
             rock = new Texture("rock.jpg");
             //darkGrass.SetFiltering(TextureMinFilter.Linear, TextureMagFilter.Linear);
         }
@@ -97,14 +86,10 @@ namespace Generating
 
             vao = new VAO();
             terrain = new VAO();
-            
-            if (!isCalculated)
-            {
-                terrainGenerator.GenerateHeightMap(W, H, topLeft, bottomLeft, bottomRight, topRight, roughness, min, max);
-                terrainGenerator.NormalizeHeightMap(terrain);
+
+            terrainGenerator.GenerateHeightMap(W, H, topLeft, bottomLeft, bottomRight, topRight, roughness, min, max);
+            terrainGenerator.NormalizeHeightMap(terrain);
                 
-                isCalculated = true;
-            }
 
             GL.ClearColor(0.1f, 0.2f, 0.5f, 0.0f);
             GL.Enable(EnableCap.DepthTest);
@@ -123,7 +108,6 @@ namespace Generating
             base.OnUpdateFrame(e);
 
             GetInput();
-            camera.UpdateView(OpenTK.Input.Mouse.GetState(), OpenTK.Input.Keyboard.GetState());
         }
         private bool isEdited = false;
         private void GetInput()
@@ -143,14 +127,6 @@ namespace Generating
                 {
                     renderMode = RenderMode.Mesh;
                 }
-                else if (buffer.Contains("heightmap"))
-                {
-                    renderMode = RenderMode.HeightMap;
-                }
-                else if (buffer.Contains("colored"))
-                {
-                    renderMode = RenderMode.Colored;
-                }
                 else if (buffer.Contains("textured"))
                 {
                     renderMode = RenderMode.Textured;
@@ -158,7 +134,7 @@ namespace Generating
                 isEdited = true;
             }
         }
-        private bool isCalculated = false;
+        private bool isInit = false;
         private void SaveHeightMap()
         {
             Bitmap bitmap = new Bitmap(W, H);
@@ -178,22 +154,10 @@ namespace Generating
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
             //testDraw();
             
+            
+            RenderMesh();
+            RenderTexturedHeightMap();
 
-            switch (renderMode)
-            {
-                case RenderMode.Mesh:
-                    RenderMesh();
-                    break;
-                case RenderMode.HeightMap:
-                    RenderHeightMap();
-                    break;
-                case RenderMode.Colored:
-                    RenderGreenHeightMap();
-                    break;
-                case RenderMode.Textured:
-                    RenderTexturedHeightMap();
-                    break;
-            }
             SwapBuffers();
             
             isEdited = false;
@@ -201,153 +165,94 @@ namespace Generating
         
         private void RenderMesh()
         {
-            if (isCalculated)
+            if (!isInit && renderMode == RenderMode.Mesh)
             {
                 terrainGenerator.CreateMesh(zoom, terrain);
-                isCalculated = false;
-            }
-            GL.Color3(Color.Red);
-            GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Line);
 
+                GL.Color3(Color.Red);
+                GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Line);
+
+                GL.Enable(EnableCap.VertexArray);
+                GL.Enable(EnableCap.PrimitiveRestart);
+                GL.PrimitiveRestartIndex(terrain.IndicesCount);
+                GL.BindBuffer(BufferTarget.ArrayBuffer, terrain.VerticesBuffer);
+                GL.BindBuffer(BufferTarget.ElementArrayBuffer, terrain.IndicesBuffer);
+                GL.VertexPointer(3, VertexPointerType.Float, Vector3.SizeInBytes, 0);
+
+                isInit = true;
+            }
             GL.Enable(EnableCap.VertexArray);
             GL.Enable(EnableCap.PrimitiveRestart);
-            GL.PrimitiveRestartIndex(terrain.IndicesCount);
-            GL.BindBuffer(BufferTarget.ArrayBuffer, terrain.VerticesBuffer);
-            GL.BindBuffer(BufferTarget.ElementArrayBuffer, terrain.IndicesBuffer);
-            GL.VertexPointer(3, VertexPointerType.Float, Vector3.SizeInBytes, 0);
+
             GL.DrawElements(BeginMode.TriangleStrip, terrain.IndicesCount, DrawElementsType.UnsignedInt, 0);
+
             GL.Disable(EnableCap.VertexArray);
             GL.Disable(EnableCap.PrimitiveRestart);
-        }
-        private void RenderHeightMap()
-        {
-            float[,] normalizedHeightMap = terrainGenerator.NormalizedHeightMap;
-            GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Fill);
-            for (int i = 0; i < W - 1; i++)
-                for (int j = 0; j < H - 1; j++)
-                {
-                    float z = i * zoom;
-                    float x = j * zoom;
-
-                    GL.Begin(BeginMode.TriangleStrip);
-                    GL.Color3(normalizedHeightMap[i, j], normalizedHeightMap[i, j], normalizedHeightMap[i, j]);
-                    GL.Vertex3(x, 0, z);
-                    GL.Color3(normalizedHeightMap[i, j+1], normalizedHeightMap[i, j+1],normalizedHeightMap[i, j+1]);
-                    GL.Vertex3(x + zoom, 0, z);
-                    GL.Color3(normalizedHeightMap[i+1, j], normalizedHeightMap[i+1, j], normalizedHeightMap[i+1, j]);
-                    GL.Vertex3(x, 0, z + zoom);
-                    GL.Color3(normalizedHeightMap[i+1, j+1], normalizedHeightMap[i+1, j+1], normalizedHeightMap[i+1, j+1]);
-                    GL.Vertex3(x + zoom, 0, z + zoom);
-
-                    GL.End();
-                }
-            GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Fill);
         }
         
-        private void RenderGreenHeightMap()
-        {
-            if (isCalculated)
-            {
-                terrainGenerator.CreateMesh(zoom, terrain);
-                isCalculated = false;
-            }
-            GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Fill);
-
-            GL.Enable(EnableCap.Texture2D);
-           // GL.Enable(EnableCap.VertexArray);
-           // GL.Enable(EnableCap.IndexArray);
-           // GL.Enable(EnableCap.NormalArray);
-           // GL.Enable(EnableCap.ColorArray);
-            GL.Enable(EnableCap.PrimitiveRestart);
-            GL.PrimitiveRestartIndex(terrain.IndicesCount);
-
-            GL.BindVertexArray(terrain.ID);
-            //GL.BindTexture(TextureTarget.Texture2D, grass.ID);
-
-            GL.BindBuffer(BufferTarget.ArrayBuffer, terrain.VerticesBuffer);
-            //GL.VertexPointer(3, VertexPointerType.Float, 0, 0);
-            GL.EnableVertexAttribArray(0);
-            GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, 0, 0);
-
-            GL.BindBuffer(BufferTarget.ArrayBuffer, terrain.TexCoordsBuffer);
-            //GL.TexCoordPointer(2, TexCoordPointerType.Float, 0, 0);
-            GL.EnableVertexAttribArray(1);
-            GL.VertexAttribPointer(1, 2, VertexAttribPointerType.Float, false, 0, 0);
-
-            GL.BindBuffer(BufferTarget.ElementArrayBuffer, terrain.IndicesBuffer);
-
-            //GL.BindBuffer(BufferTarget.ArrayBuffer, terrain.ColorsBuffer);
-            //GL.ColorPointer(3, ColorPointerType.Float, 0, 0);
-
-            GL.BindBuffer(BufferTarget.ArrayBuffer, terrain.NormalsBuffer);
-            GL.EnableVertexAttribArray(2);
-            GL.VertexAttribPointer(2, 3, VertexAttribPointerType.Float, false, 0, 0);
-
-            GL.BindBuffer(BufferTarget.ArrayBuffer, terrain.NormalizedHeightsBuffer);
-            GL.EnableVertexAttribArray(3);
-            GL.VertexAttribPointer(3, 1, VertexAttribPointerType.Float, false, 0, 0);
-
-
-            GL.ActiveTexture(TextureUnit.Texture0);
-            GL.BindTexture(TextureTarget.Texture2D, rock.ID);
-            GL.BindSampler((int)TextureUnit.Texture0, rock.SamplerID);
-            GL.ActiveTexture(TextureUnit.Texture1);
-            GL.BindTexture(TextureTarget.Texture2D, grass.ID);
-            GL.BindSampler((int)TextureUnit.Texture1, grass.SamplerID);
-            shaderProgram.Start();
-
-            GL.UniformMatrix4(projection, false, ref camera.Projection);
-            GL.UniformMatrix4(modelView, false, ref camera.ModelView);
-            GL.Uniform1(sampler1, 0);
-            GL.Uniform1(sampler2, 1);
-            GL.Uniform4(color, new Vector4(1.0f, 1.0f, 1.0f, 1.0f));
-            GL.Uniform3(lightColor, ref lightTerrain.Color);
-            GL.Uniform3(lightDirection, ref lightTerrain.Direction);
-            GL.Uniform1(lightAmbient, lightTerrain.AmbientIntensity);
-            GL.Uniform4(fogColor, ref FogColor);
-            GL.Uniform1(fogDensity, 0.001f);
-            GL.Uniform1(fogStart, 30.0f);
-            GL.Uniform1(fogEnd, 100.0f);
-            GL.Uniform1(fogType, 2);
-
-            GL.DrawElements(BeginMode.TriangleStrip, terrain.IndicesCount, DrawElementsType.UnsignedInt, 0);
-            //shaderProgram.Stop();
-
-            GL.Disable(EnableCap.VertexArray);
-            GL.Disable(EnableCap.IndexArray);
-            GL.Disable(EnableCap.ColorArray);
-            GL.Disable(EnableCap.PrimitiveRestart);
-            GL.Disable(EnableCap.NormalArray);
-        }
         private void RenderTexturedHeightMap()
         {
-            float[,] heightMap = terrainGenerator.HeightMap;
-            GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Fill);
-            GL.BindTexture(TextureTarget.Texture2D, texture.ID);
+            if (!isInit && renderMode == RenderMode.Textured)
+            {
+                terrainGenerator.CreateMesh(zoom, terrain);
+
+                GL.BindVertexArray(terrain.ID);
+
+                GL.BindBuffer(BufferTarget.ArrayBuffer, terrain.VerticesBuffer);
+                GL.EnableVertexAttribArray(shaderProgram.AttribLocation["inPosition"]);
+                GL.VertexAttribPointer(shaderProgram.AttribLocation["inPosition"], 3, VertexAttribPointerType.Float, false, 0, 0);
+
+                GL.BindBuffer(BufferTarget.ArrayBuffer, terrain.TexCoordsBuffer);
+                GL.EnableVertexAttribArray(shaderProgram.AttribLocation["inCoord"]);
+                GL.VertexAttribPointer(shaderProgram.AttribLocation["inCoord"], 2, VertexAttribPointerType.Float, false, 0, 0);
+
+                GL.BindBuffer(BufferTarget.ElementArrayBuffer, terrain.IndicesBuffer);
+
+                GL.BindBuffer(BufferTarget.ArrayBuffer, terrain.NormalsBuffer);
+                GL.EnableVertexAttribArray(shaderProgram.AttribLocation["inNormal"]);
+                GL.VertexAttribPointer(shaderProgram.AttribLocation["inNormal"], 3, VertexAttribPointerType.Float, false, 0, 0);
+
+                GL.BindBuffer(BufferTarget.ArrayBuffer, terrain.NormalizedHeightsBuffer);
+                GL.EnableVertexAttribArray(shaderProgram.AttribLocation["inNormalizedHeight"]);
+                GL.VertexAttribPointer(shaderProgram.AttribLocation["inNormalizedHeight"], 1, VertexAttribPointerType.Float, false, 0, 0);
+
+
+                GL.ActiveTexture(TextureUnit.Texture0);
+                GL.BindTexture(TextureTarget.Texture2D, rock.ID);
+                GL.BindSampler((int)TextureUnit.Texture0, rock.SamplerID);
+                GL.ActiveTexture(TextureUnit.Texture1);
+                GL.BindTexture(TextureTarget.Texture2D, grass.ID);
+                GL.BindSampler((int)TextureUnit.Texture1, grass.SamplerID);
+
+                shaderProgram.Start();
+                
+                isInit = true;
+            }
+            camera.UpdateView(OpenTK.Input.Mouse.GetState(), OpenTK.Input.Keyboard.GetState());
+
             GL.Enable(EnableCap.Texture2D);
-            float stepTexCoord = 1.0f / W;
-            for (int i = 0; i < W - 1; i++)
-                for (int j = 0; j < H - 1; j++)
-                {
-                    float z = i * zoom;
-                    float x = j * zoom;
+            GL.Enable(EnableCap.PrimitiveRestart);
+            GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Fill);
+            GL.PrimitiveRestartIndex(terrain.IndicesCount);
 
-                    GL.Begin(BeginMode.TriangleStrip);
 
-                    GL.TexCoord2(i * stepTexCoord, j * stepTexCoord);
-                    GL.Vertex3(x, heightMap[i, j] * zoom, z);
+            GL.UniformMatrix4(shaderProgram.Uniforms["projectionMatrix"], false, ref camera.Projection);
+            GL.UniformMatrix4(shaderProgram.Uniforms["modelViewMatrix"], false, ref camera.ModelView);
+            GL.Uniform1(shaderProgram.Uniforms["samplers[0]"], 0);
+            GL.Uniform1(shaderProgram.Uniforms["samplers[1]"], 1);
+            GL.Uniform4(shaderProgram.Uniforms["color"], new Vector4(1.0f, 1.0f, 1.0f, 1.0f));
+            GL.Uniform3(shaderProgram.Uniforms["light.color"], ref light.Color);
+            GL.Uniform3(shaderProgram.Uniforms["light.direction"], ref light.Direction);
+            GL.Uniform1(shaderProgram.Uniforms["light.ambientIntensity"], light.AmbientIntensity);
+            GL.Uniform4(shaderProgram.Uniforms["fog.color"], ref FogColor);
+            GL.Uniform1(shaderProgram.Uniforms["fog.density"], 0.001f);
+            GL.Uniform1(shaderProgram.Uniforms["fog.start"], 30.0f);
+            GL.Uniform1(shaderProgram.Uniforms["fog.end"], 100.0f);
+            GL.Uniform1(shaderProgram.Uniforms["fog.type"], 2);
 
-                    GL.TexCoord2((i + 1) * stepTexCoord, j * stepTexCoord);
-                    GL.Vertex3(x + zoom, heightMap[i, j + 1] * zoom, z);
-
-                    GL.TexCoord2(i * stepTexCoord, (j + 1) * stepTexCoord);
-                    GL.Vertex3(x, heightMap[i + 1, j] * zoom, z + zoom);
-
-                    GL.TexCoord2((i + 1) * stepTexCoord, (j + 1) * stepTexCoord);
-                    GL.Vertex3(x + zoom, heightMap[i + 1, j + 1] * zoom, z + zoom);
-
-                    GL.End();
-                }
+            GL.DrawElements(BeginMode.TriangleStrip, terrain.IndicesCount, DrawElementsType.UnsignedInt, 0);
+            
+            GL.Disable(EnableCap.PrimitiveRestart);
             GL.Disable(EnableCap.Texture2D);
         }
         private void testDraw()

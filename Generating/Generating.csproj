@@ -89,11 +89,8 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Assets\rock.jpg" />
-    <EmbeddedResource Include="Assets\land2.jpg" />
     <EmbeddedResource Include="Assets\grass.jpg" />
-    <EmbeddedResource Include="Assets\grass2.jpg" />
-    <Content Include="Assets\land.png" />
+    <EmbeddedResource Include="Assets\rock.jpg" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
