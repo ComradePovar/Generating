@@ -46,7 +46,7 @@ namespace Generating
 
         public void OnResize(int width, int height)
         {
-            Projection = Matrix4.CreatePerspectiveFieldOfView((float)Math.PI / 4f, width / (float)height, 1.0f, 10000.0f);
+            Projection = Matrix4.CreatePerspectiveFieldOfView((float)Math.PI / 4f, width / (float)height, 1.0f, 1500.0f);
             GL.MatrixMode(MatrixMode.Projection);
             GL.LoadMatrix(ref Projection);
         }

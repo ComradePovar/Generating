@@ -46,17 +46,17 @@ namespace Generating
             GL.TexParameterI(TextureTarget.Texture2D, TextureParameterName.TextureMaxLevel, ref maxLevels);
             GL.TexParameterI(TextureTarget.Texture2D, TextureParameterName.GenerateMipmap, ref @true);
             GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)
-                TextureWrapMode.MirroredRepeat);
+                TextureWrapMode.Repeat);
             GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)
-                TextureWrapMode.MirroredRepeat);
+                TextureWrapMode.Repeat);
             GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)
                 TextureMinFilter.LinearMipmapLinear);
             GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)
                 TextureMagFilter.Linear);
             GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, data.Width, data.Height, 0,
-                OpenTK.Graphics.OpenGL.PixelFormat.Rgba, PixelType.UnsignedByte, data.Scan0);
+                OpenTK.Graphics.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte, data.Scan0);
 
-            
+            GL.Viewport(0, 0, data.Width, data.Height);
             
 
             //GL.TexParameterI(TextureTarget.Texture2D, TextureParameterName.GenerateMipmap, )

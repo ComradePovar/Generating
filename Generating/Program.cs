@@ -20,7 +20,7 @@ namespace Generating
         float zoom = 1f;
         private float min = 0;
         private float max = 5;
-        private float roughness = 30f;
+        private float roughness = 20f;
         private float topLeft = 0;
         private float bottomLeft = 0;
         private float bottomRight = 0;
@@ -32,6 +32,7 @@ namespace Generating
 
         Texture grass;
         Texture rock;
+        Texture mud;
         Vector4 FogColor;
         public float Roughness { get; set; }
         public float Min { get; set; }
@@ -54,6 +55,7 @@ namespace Generating
             shaderProgram.Uniforms["color"] = GL.GetUniformLocation(shaderProgram.ID, "color");
             shaderProgram.Uniforms["samplers[0]"] = GL.GetUniformLocation(shaderProgram.ID, "samplers[0]");
             shaderProgram.Uniforms["samplers[1]"] = GL.GetUniformLocation(shaderProgram.ID, "samplers[1]");
+            shaderProgram.Uniforms["samplers[2]"] = GL.GetUniformLocation(shaderProgram.ID, "samplers[2]");
             shaderProgram.Uniforms["light.color"] = GL.GetUniformLocation(shaderProgram.ID, "light.color");
             shaderProgram.Uniforms["light.direction"] = GL.GetUniformLocation(shaderProgram.ID, "light.direction");
             shaderProgram.Uniforms["light.ambientIntensity"] = GL.GetUniformLocation(shaderProgram.ID, "light.ambientIntensity");
@@ -76,8 +78,9 @@ namespace Generating
                 AmbientIntensity = 0.25f
             };
             FogColor = new Vector4(0.7f, 0.7f, 0.7f, 1.0f);
-            grass = new Texture("grass.jpg");
             rock = new Texture("rock.jpg");
+            mud = new Texture("mud.jpg");
+            grass = new Texture("grass.jpg");
             //darkGrass.SetFiltering(TextureMinFilter.Linear, TextureMagFilter.Linear);
         }
         protected override void OnLoad(EventArgs e)
@@ -108,6 +111,7 @@ namespace Generating
             base.OnUpdateFrame(e);
 
             GetInput();
+            camera.UpdateView(OpenTK.Input.Mouse.GetState(), OpenTK.Input.Keyboard.GetState());
         }
         private bool isEdited = false;
         private void GetInput()
@@ -223,23 +227,29 @@ namespace Generating
                 GL.ActiveTexture(TextureUnit.Texture1);
                 GL.BindTexture(TextureTarget.Texture2D, grass.ID);
                 GL.BindSampler((int)TextureUnit.Texture1, grass.SamplerID);
+                GL.ActiveTexture(TextureUnit.Texture2);
+                GL.BindTexture(TextureTarget.Texture2D, mud.ID);
+                GL.BindSampler((int)TextureUnit.Texture2, mud.SamplerID);
 
                 shaderProgram.Start();
                 
                 isInit = true;
             }
-            camera.UpdateView(OpenTK.Input.Mouse.GetState(), OpenTK.Input.Keyboard.GetState());
 
+            int a = BitConverter.ToInt32(new byte[] { (byte)255, (byte)255, (byte)255, (byte)255 }, 0);
+            int b = BitConverter.ToInt32(new byte[] { (byte)255, (byte)255, (byte)255, (byte)0 }, 0);
             GL.Enable(EnableCap.Texture2D);
             GL.Enable(EnableCap.PrimitiveRestart);
-            GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Fill);
+            GL.Enable(EnableCap.CullFace);
+            GL.PolygonMode(MaterialFace.Front, PolygonMode.Fill);
             GL.PrimitiveRestartIndex(terrain.IndicesCount);
 
 
             GL.UniformMatrix4(shaderProgram.Uniforms["projectionMatrix"], false, ref camera.Projection);
             GL.UniformMatrix4(shaderProgram.Uniforms["modelViewMatrix"], false, ref camera.ModelView);
-            GL.Uniform1(shaderProgram.Uniforms["samplers[0]"], 0);
+            GL.Uniform1(shaderProgram.Uniforms["samplers[0]"], (int)TextureUnit.Texture0);
             GL.Uniform1(shaderProgram.Uniforms["samplers[1]"], 1);
+            GL.Uniform1(shaderProgram.Uniforms["samplers[2]"], 2);
             GL.Uniform4(shaderProgram.Uniforms["color"], new Vector4(1.0f, 1.0f, 1.0f, 1.0f));
             GL.Uniform3(shaderProgram.Uniforms["light.color"], ref light.Color);
             GL.Uniform3(shaderProgram.Uniforms["light.direction"], ref light.Direction);
@@ -251,7 +261,7 @@ namespace Generating
             GL.Uniform1(shaderProgram.Uniforms["fog.type"], 2);
 
             GL.DrawElements(BeginMode.TriangleStrip, terrain.IndicesCount, DrawElementsType.UnsignedInt, 0);
-            
+
             GL.Disable(EnableCap.PrimitiveRestart);
             GL.Disable(EnableCap.Texture2D);
         }

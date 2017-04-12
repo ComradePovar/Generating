@@ -90,6 +90,7 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Assets\grass.jpg" />
+    <EmbeddedResource Include="Assets\mud.jpg" />
     <EmbeddedResource Include="Assets\rock.jpg" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
