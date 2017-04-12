@@ -2,6 +2,7 @@
 #define PI 3.1415926535897932384626433832795
 #define PIOver6 0.52359877559829887307
 #define PIOver4 0.78539816339744830961
+#define PIOver2 1.57079632679489661923
 
 smooth in vec2 texCoord;
 smooth in vec3 normal;
@@ -26,10 +27,11 @@ struct Fog
 };
 
 // Samplers:
-// 1) rock;
-// 2) grass;
-// 3) mud;
-uniform sampler2D samplers[3];
+// 0) rock;
+// 1) grass;
+// 2) mud;
+// 3) dirt;
+uniform sampler2D samplers[4];
 uniform vec4 color;
 uniform DirectionalLight light;
 uniform Fog fog;
@@ -40,38 +42,45 @@ void main()
 {
 	outputColor = vec4(0.0, 0.0, 0.0, 1.0);
 	float angle = abs(acos(normal.y));
+
+
 	const float grassLowerBound = 0.0;
-	const float grassUpperBound = 0.65;
-	const float mudLowerBound = 0.7;
-	const float mudUpperBound = 0.75;
+	const float grassUpperBound = 0.5;
+	const float mudLowerBound = 0.6;
+	const float mudUpperBound = 0.7;
 	const float rockLowerBound = 0.8;
 	const float rockUpperBound = 1.0;
-	//float steepInfluence = (angle * 0.75 + angle * normalizedHeight * 0.25) / 2;
+
+	bool isSteep = angle > PIOver4;
+	float steepInfluence = angle * (grassUpperBound - normalizedHeight)*4/ PIOver2;
 
 	vec4 texColor = vec4(0.0, 0.0, 0.0, 1.0);
 
 	if (normalizedHeight < grassUpperBound){
+		texColor = texture2D(samplers[3], texCoord);
+		outputColor += texColor * steepInfluence;
 		texColor = texture2D(samplers[1], texCoord);
-		outputColor += texColor;
+		outputColor += texColor * (1 - steepInfluence);
 	}
 	else if (normalizedHeight < mudLowerBound){
-		float grassInfluence = (normalizedHeight - grassUpperBound) / (mudLowerBound - grassUpperBound);
+	
+		float mudInfluence = (normalizedHeight - grassUpperBound) / (mudLowerBound - grassUpperBound);
 
 		texColor = texture2D(samplers[2], texCoord);
-		outputColor += texColor * grassInfluence;
+		outputColor += texColor * mudInfluence;
 
 		texColor = texture2D(samplers[1], texCoord);
-		outputColor += texColor * (1.0 - grassInfluence);
+		outputColor += texColor * (1.0 - mudInfluence);
 	}
 	else if (normalizedHeight < mudUpperBound){
 		texColor = texture2D(samplers[2], texCoord);
-		outputColor += texColor;
+		outputColor += texColor * (1 - steepInfluence);
 	}
 	else if (normalizedHeight < rockLowerBound){
 		float rockInfluence = (normalizedHeight - mudUpperBound) / (rockLowerBound - mudUpperBound);
 
 		texColor = texture2D(samplers[0], texCoord);
-		outputColor += texColor * (rockInfluence);
+		outputColor += texColor * rockInfluence;
 
 		texColor = texture2D(samplers[2], texCoord);
 		outputColor += texColor * (1.0 - rockInfluence);

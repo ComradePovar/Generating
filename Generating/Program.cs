@@ -6,6 +6,14 @@ using OpenTK.Graphics.OpenGL;
 using System.Drawing;
 using Generating.Shaders;
 
+
+/* TODO:
+ * 1) Упростить структуру программы;
+ * 2) Загрузка существующей heightmap;
+ * 3) Сделать поправку на крутость гор и холмов;
+ * 4) Разбить terrain на чанки;
+ * 5) UI для задания параметров карты;
+ * */
 namespace Generating
 {
     enum RenderMode { Mesh, Textured }
@@ -20,7 +28,7 @@ namespace Generating
         float zoom = 1f;
         private float min = 0;
         private float max = 5;
-        private float roughness = 12f;
+        private float roughness = 20f;
         private float topLeft = 0;
         private float bottomLeft = 0;
         private float bottomRight = 0;
@@ -33,7 +41,9 @@ namespace Generating
         Texture grass;
         Texture rock;
         Texture mud;
+        Texture dirt;
         Vector4 FogColor;
+        
         public float Roughness { get; set; }
         public float Min { get; set; }
         public float Max { get; set; }
@@ -79,8 +89,9 @@ namespace Generating
             };
             FogColor = new Vector4(0.7f, 0.7f, 0.7f, 1.0f);
             rock = new Texture("rock.jpg");
-            mud = new Texture("mud.jpg");
+            mud = new Texture("mossyrock.jpg");
             grass = new Texture("grass2.jpg");
+            dirt = new Texture("dirt.jpg");
             //darkGrass.SetFiltering(TextureMinFilter.Linear, TextureMagFilter.Linear);
         }
         protected override void OnLoad(EventArgs e)

@@ -97,7 +97,7 @@ namespace Generating
                     indices[ind++] = (uint)(i * Width + j);
                     if (i != Width - 1)
                         indices[ind++] = (uint)((i + 1) * Width + j);
-                    texCoords[ver++] = new Vector2(15*x / (Height-1), 15*z /(Width-1));
+                    texCoords[ver++] = new Vector2(x*15 / (Height-1), z*15 /(Width-1)); // 15 * for 513x513 map
                 }
 
                 indices[ind++] = (uint)indices.Length;

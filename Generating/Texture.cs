@@ -56,10 +56,8 @@ namespace Generating
             GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, data.Width, data.Height, 0,
                 OpenTK.Graphics.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte, data.Scan0);
 
-            GL.Viewport(0, 0, data.Width, data.Height);
+            //GL.Viewport(0, 0, data.Width, data.Height);
             
-
-            //GL.TexParameterI(TextureTarget.Texture2D, TextureParameterName.GenerateMipmap, )
             bitmap.UnlockBits(data);
             GL.BindTexture(TextureTarget.Texture2D, 0);
         }
