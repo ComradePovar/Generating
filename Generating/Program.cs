@@ -12,15 +12,15 @@ namespace Generating
     class Game : GameWindow
     {
         private Texture texture;
-        private int W = 1025;
-        private int H = 1025;
+        private int W = 513;
+        private int H = 513;
         TerrainGenerator terrainGenerator;
         Camera camera;
         
         float zoom = 1f;
         private float min = 0;
         private float max = 5;
-        private float roughness = 20f;
+        private float roughness = 12f;
         private float topLeft = 0;
         private float bottomLeft = 0;
         private float bottomRight = 0;
@@ -80,7 +80,7 @@ namespace Generating
             FogColor = new Vector4(0.7f, 0.7f, 0.7f, 1.0f);
             rock = new Texture("rock.jpg");
             mud = new Texture("mud.jpg");
-            grass = new Texture("grass.jpg");
+            grass = new Texture("grass2.jpg");
             //darkGrass.SetFiltering(TextureMinFilter.Linear, TextureMagFilter.Linear);
         }
         protected override void OnLoad(EventArgs e)

@@ -38,21 +38,24 @@ float getFogFactor(Fog fog, float coord);
 
 void main()
 {
-	outputColor = vec4(0.0, 0.0, 0.0, 0.0);
+	outputColor = vec4(0.0, 0.0, 0.0, 1.0);
 	float angle = abs(acos(normal.y));
-	const float grassLevel = 0.0;
-	const float mudLevel = 0.6;
-	const float rockLevel = 0.8;
-	float steepInfluence = (angle * 0.75 + angle * normalizedHeight * 0.7) / 2.28 ;
+	const float grassLowerBound = 0.0;
+	const float grassUpperBound = 0.65;
+	const float mudLowerBound = 0.7;
+	const float mudUpperBound = 0.75;
+	const float rockLowerBound = 0.8;
+	const float rockUpperBound = 1.0;
+	//float steepInfluence = (angle * 0.75 + angle * normalizedHeight * 0.25) / 2;
 
 	vec4 texColor = vec4(0.0, 0.0, 0.0, 1.0);
 
-	if (normalizedHeight < 0.5){
+	if (normalizedHeight < grassUpperBound){
 		texColor = texture2D(samplers[1], texCoord);
 		outputColor += texColor;
 	}
-	else if (normalizedHeight < mudLevel){
-		float grassInfluence = (normalizedHeight - 0.5) / (mudLevel - 0.5);
+	else if (normalizedHeight < mudLowerBound){
+		float grassInfluence = (normalizedHeight - grassUpperBound) / (mudLowerBound - grassUpperBound);
 
 		texColor = texture2D(samplers[2], texCoord);
 		outputColor += texColor * grassInfluence;
@@ -60,12 +63,12 @@ void main()
 		texColor = texture2D(samplers[1], texCoord);
 		outputColor += texColor * (1.0 - grassInfluence);
 	}
-	else if (normalizedHeight < 0.7){
+	else if (normalizedHeight < mudUpperBound){
 		texColor = texture2D(samplers[2], texCoord);
 		outputColor += texColor;
 	}
-	else if (normalizedHeight < rockLevel){
-		float rockInfluence = (normalizedHeight - 0.7) / (rockLevel - 0.7);
+	else if (normalizedHeight < rockLowerBound){
+		float rockInfluence = (normalizedHeight - mudUpperBound) / (rockLowerBound - mudUpperBound);
 
 		texColor = texture2D(samplers[0], texCoord);
 		outputColor += texColor * (rockInfluence);
@@ -82,7 +85,6 @@ void main()
 	outputColor *= color*vec4(light.color*(light.ambientIntensity+diffuseIntensity), 1.0);
 
 	float fogCoord = abs(eyeSpacePosition.z / eyeSpacePosition.w);
-	//Fog, don't need yet
 	outputColor = mix(outputColor, fog.color, getFogFactor(fog, fogCoord));
 }
 

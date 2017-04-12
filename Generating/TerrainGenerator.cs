@@ -85,7 +85,6 @@ namespace Generating
             Vector3[] vertices = new Vector3[Width * Height];
             uint[] indices = new uint[2 * Width * Height];
             Vector2[] texCoords = new Vector2[Width * Height];
-            //Vector3[] colors = new Vector3[Width * Height];
             Vector3[] normals;
             for (int i = 0, ver = 0, ind = 0; i < Width; i++)
             {
@@ -98,19 +97,7 @@ namespace Generating
                     indices[ind++] = (uint)(i * Width + j);
                     if (i != Width - 1)
                         indices[ind++] = (uint)((i + 1) * Width + j);
-                    //Add colors
-                    //if (NormalizedHeightMap[i, j] < 0.33f)
-                    //{
-                    //        colors[ver] = new Vector3(0f, 132f / 255, 0f);
-                    //}
-                    //else if (NormalizedHeightMap[i, j] < 0.66f)
-                    //    colors[ver] = new Vector3(132f/255, 132f/255, 132f/255);
-                    //else if (Math.Abs(NormalizedHeightMap[(i + 1) % Width, j] - NormalizedHeightMap[i, j]) > 0.03 ||
-                    //         Math.Abs(NormalizedHeightMap[i, (j + 1) % Height] - NormalizedHeightMap[i, j]) > 0.03f)
-                    //            colors[ver] = new Vector3(89f / 255, 65f / 255, 65f / 255);
-                    //     else
-                    //            colors[ver] = new Vector3(216f/255, 216f/255, 216f/255);
-                    texCoords[ver++] = new Vector2(x* 20 / (Height-1), z * 20/(Width-1));/// (Height - 1), z / (Width - 1)); // , z);
+                    texCoords[ver++] = new Vector2(15*x / (Height-1), 15*z /(Width-1));
                 }
 
                 indices[ind++] = (uint)indices.Length;
