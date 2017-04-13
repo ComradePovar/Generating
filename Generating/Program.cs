@@ -8,18 +8,19 @@ using Generating.Shaders;
 
 
 /* TODO:
- * 1) Упростить структуру программы;
- * 2) Загрузка существующей heightmap;
- * 3) Сделать поправку на крутость гор и холмов;
- * 4) Разбить terrain на чанки;
- * 5) UI для задания параметров карты;
+ * Redbook 8th edition 
+ *- 1) Упростить структуру программы;
+ *- 2) Загрузка существующей heightmap;
+ *+ 3) Сделать поправку на крутость гор и холмов;
+ *- 4) Разбить terrain на чанки;
+ *- 5) UI для задания параметров карты;
+ *- 6) Доработать алгоритм генерации;
  * */
 namespace Generating
 {
     enum RenderMode { Mesh, Textured }
     class Game : GameWindow
     {
-        private Texture texture;
         private int W = 513;
         private int H = 513;
         TerrainGenerator terrainGenerator;
@@ -28,7 +29,7 @@ namespace Generating
         float zoom = 1f;
         private float min = 0;
         private float max = 5;
-        private float roughness = 20f;
+        private float roughness = 15f;
         private float topLeft = 0;
         private float bottomLeft = 0;
         private float bottomRight = 0;
@@ -87,7 +88,7 @@ namespace Generating
                 Color = new Vector3(1.0f, 1.0f, 1.0f),
                 AmbientIntensity = 0.25f
             };
-            FogColor = new Vector4(0.7f, 0.7f, 0.7f, 1.0f);
+            FogColor = new Vector4(0.5f, 0.5f, 0.5f, 1.0f);
             rock = new Texture("rock.jpg");
             mud = new Texture("mossyrock.jpg");
             grass = new Texture("grass2.jpg");
@@ -134,13 +135,10 @@ namespace Generating
                 {
                     SaveHeightMap();
                 }
-                else if (buffer.Contains("load texture"))
-                {
-                    texture = new Texture("land2.jpg");
-                }
                 else if (buffer.Contains("mesh"))
                 {
                     renderMode = RenderMode.Mesh;
+                    isInit = false;
                 }
                 else if (buffer.Contains("textured"))
                 {
@@ -247,8 +245,6 @@ namespace Generating
                 isInit = true;
             }
 
-            int a = BitConverter.ToInt32(new byte[] { (byte)255, (byte)255, (byte)255, (byte)255 }, 0);
-            int b = BitConverter.ToInt32(new byte[] { (byte)255, (byte)255, (byte)255, (byte)0 }, 0);
             GL.Enable(EnableCap.Texture2D);
             GL.Enable(EnableCap.PrimitiveRestart);
             GL.Enable(EnableCap.CullFace);

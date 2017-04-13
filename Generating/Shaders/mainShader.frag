@@ -56,7 +56,7 @@ void main()
 
 	vec4 texColor = vec4(0.0, 0.0, 0.0, 1.0);
 
-	if (normalizedHeight < grassUpperBound){
+	if (normalizedHeight <= grassUpperBound){
 		texColor = texture2D(samplers[3], texCoord);
 		outputColor += texColor * steepInfluence;
 		texColor = texture2D(samplers[1], texCoord);
@@ -72,9 +72,9 @@ void main()
 		texColor = texture2D(samplers[1], texCoord);
 		outputColor += texColor * (1.0 - mudInfluence);
 	}
-	else if (normalizedHeight < mudUpperBound){
+	else if (normalizedHeight <= mudUpperBound){
 		texColor = texture2D(samplers[2], texCoord);
-		outputColor += texColor * (1 - steepInfluence);
+		outputColor += texColor;
 	}
 	else if (normalizedHeight < rockLowerBound){
 		float rockInfluence = (normalizedHeight - mudUpperBound) / (rockLowerBound - mudUpperBound);

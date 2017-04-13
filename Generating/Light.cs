@@ -18,7 +18,7 @@ namespace Generating
 
         public Light(float angle)
         {
-            LightPos = new Vector3(-30, 30, 30);
+            LightPos = new Vector3(-70, 100, 70);
             Direction = LightPos;
             Direction.Normalize();
             Direction = -Direction;
