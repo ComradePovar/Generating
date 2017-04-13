@@ -11,10 +11,13 @@ using Generating.Shaders;
  * Redbook 8th edition 
  *- 1) Упростить структуру программы;
  *- 2) Загрузка существующей heightmap;
- *+ 3) Сделать поправку на крутость гор и холмов;
  *- 4) Разбить terrain на чанки;
- *- 5) UI для задания параметров карты;
- *- 6) Доработать алгоритм генерации;
+ *- 10) UI для задания параметров карты;
+ *- 9) Доработать алгоритм генерации;
+ *- 6) Shadow map;
+ *- 5) specular light;
+ *- 8) terrain patterns;
+ *- 7) blending, texture splatting;
  * */
 namespace Generating
 {
