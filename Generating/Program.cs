@@ -17,7 +17,7 @@ using Generating.Shaders;
  *- 6) Shadow map;
  *- 5) specular light;
  *- 8) terrain patterns;
- *- 7) blending, texture splatting;
+ *- 7) correct blending, texture splatting;
  * */
 namespace Generating
 {
