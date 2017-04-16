@@ -1,0 +1,17 @@
+#version 450
+
+smooth in vec4 color;
+smooth in vec3 normal;
+
+smooth out vec4 outputColor;
+
+uniform vec3 lDirection;
+uniform vec3 lColor;
+uniform float ambientIntensity;
+
+void main()
+{	
+	float diffuseIntensity = max(0.0, dot(normalize(normal), -lDirection));
+	diffuseIntensity = min(diffuseIntensity, 1.0);
+	outputColor = color * vec4(lColor*(ambientIntensity+diffuseIntensity), 1.0);
+}
