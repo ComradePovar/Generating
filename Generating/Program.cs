@@ -41,16 +41,20 @@ namespace Generating
         private VAO terrain;
         private ShaderProgram shaderProgram;
         private Light light;
+        public float specularIntensity = 2;
+        public float specularPower = 10;
 
         Texture grass;
         Texture rock;
         Texture mud;
         Texture dirt;
         Vector4 FogColor;
+        Matrix4 model = Matrix4.Identity;
         
         public float Roughness { get; set; }
         public float Min { get; set; }
         public float Max { get; set; }
+
 
         public Game()
             : base(800, 600, GraphicsMode.Default, "OpenTK")
@@ -64,8 +68,10 @@ namespace Generating
             shaderProgram.AttachShaders(fogShader, vertexShader, fragmentShader);
             shaderProgram.LinkProgram();
             
-            shaderProgram.Uniforms["modelViewMatrix"] = GL.GetUniformLocation(shaderProgram.ID, "modelViewMatrix");
+            shaderProgram.Uniforms["modelMatrix"] = GL.GetUniformLocation(shaderProgram.ID, "modelMatrix");
+            shaderProgram.Uniforms["viewMatrix"] = GL.GetUniformLocation(shaderProgram.ID, "viewMatrix");
             shaderProgram.Uniforms["projectionMatrix"] = GL.GetUniformLocation(shaderProgram.ID, "projectionMatrix");
+            shaderProgram.Uniforms["normalMatrix"] = GL.GetUniformLocation(shaderProgram.ID, "normalMatrix");
             shaderProgram.Uniforms["color"] = GL.GetUniformLocation(shaderProgram.ID, "color");
             shaderProgram.Uniforms["samplers[0]"] = GL.GetUniformLocation(shaderProgram.ID, "samplers[0]");
             shaderProgram.Uniforms["samplers[1]"] = GL.GetUniformLocation(shaderProgram.ID, "samplers[1]");
@@ -73,6 +79,9 @@ namespace Generating
             shaderProgram.Uniforms["light.color"] = GL.GetUniformLocation(shaderProgram.ID, "light.color");
             shaderProgram.Uniforms["light.direction"] = GL.GetUniformLocation(shaderProgram.ID, "light.direction");
             shaderProgram.Uniforms["light.ambientIntensity"] = GL.GetUniformLocation(shaderProgram.ID, "light.ambientIntensity");
+            shaderProgram.Uniforms["light.specularIntensity"] = GL.GetUniformLocation(shaderProgram.ID, "light.specularIntensity");
+            shaderProgram.Uniforms["light.specularPower"] = GL.GetUniformLocation(shaderProgram.ID, "light.specularPower");
+            shaderProgram.Uniforms["eyePos"] = GL.GetUniformLocation(shaderProgram.ID, "eyePos");
             shaderProgram.Uniforms["fog.color"] = GL.GetUniformLocation(shaderProgram.ID, "fog.color");
             shaderProgram.Uniforms["fog.start"] = GL.GetUniformLocation(shaderProgram.ID, "fog.start");
             shaderProgram.Uniforms["fog.end"] = GL.GetUniformLocation(shaderProgram.ID, "fog.end");
@@ -86,10 +95,13 @@ namespace Generating
 
             terrainGenerator = new TerrainGenerator();
             camera = Camera.Instance;
+            camera.scene = this;
             light = new Light(-45.0f)
             {
                 Color = new Vector3(1.0f, 1.0f, 1.0f),
-                AmbientIntensity = 0.25f
+                AmbientIntensity = 0.25f,
+                SpecularIntensity = 20,
+                SpecularPower = 10
             };
             FogColor = new Vector4(0.5f, 0.5f, 0.5f, 1.0f);
             rock = new Texture("rock.jpg");
@@ -256,7 +268,10 @@ namespace Generating
 
 
             GL.UniformMatrix4(shaderProgram.Uniforms["projectionMatrix"], false, ref camera.Projection);
-            GL.UniformMatrix4(shaderProgram.Uniforms["modelViewMatrix"], false, ref camera.ModelView);
+            GL.UniformMatrix4(shaderProgram.Uniforms["modelMatrix"], false, ref model);
+            GL.UniformMatrix4(shaderProgram.Uniforms["viewMatrix"], false, ref camera.ModelView);
+            GL.UniformMatrix4(shaderProgram.Uniforms["normalMatrix"], false, ref camera.Normal);
+            GL.Uniform3(shaderProgram.Uniforms["eyePos"], ref camera.Eye);
             GL.Uniform1(shaderProgram.Uniforms["samplers[0]"], (int)TextureUnit.Texture0);
             GL.Uniform1(shaderProgram.Uniforms["samplers[1]"], 1);
             GL.Uniform1(shaderProgram.Uniforms["samplers[2]"], 2);
@@ -264,6 +279,8 @@ namespace Generating
             GL.Uniform3(shaderProgram.Uniforms["light.color"], ref light.Color);
             GL.Uniform3(shaderProgram.Uniforms["light.direction"], ref light.Direction);
             GL.Uniform1(shaderProgram.Uniforms["light.ambientIntensity"], light.AmbientIntensity);
+            GL.Uniform1(shaderProgram.Uniforms["light.specularIntensity"], specularIntensity);
+            GL.Uniform1(shaderProgram.Uniforms["light.specularPower"], specularPower);
             GL.Uniform4(shaderProgram.Uniforms["fog.color"], ref FogColor);
             GL.Uniform1(shaderProgram.Uniforms["fog.density"], 0.001f);
             GL.Uniform1(shaderProgram.Uniforms["fog.start"], 30.0f);

@@ -15,6 +15,8 @@ namespace Generating
         public float AmbientIntensity;
         public Vector3 Color;
         public Vector3 Direction;
+        public float SpecularIntensity;
+        public float SpecularPower;
 
         public Light(float angle)
         {

@@ -8,17 +8,19 @@ namespace Generating
     public class Camera
     {
         private static Camera instance;
-        private Vector3 eye;
+        public Vector3 Eye;
         private Vector3 target;
         private Vector3 upVector;
         private float facing;
         private float pitch;
         private int prevMouseX;
         private int prevMouseY;
+        internal Game scene { get; set; }
 
         public float MovementSpeed { get; set; }
         public float RotationSpeed { get; set; }
         public Matrix4 ModelView;
+        public Matrix4 Normal;
         public Matrix4 Projection;
 
         public static Camera Instance
@@ -33,13 +35,13 @@ namespace Generating
 
         private Camera()
         {
-            eye = Vector3.Zero;
+            Eye = Vector3.Zero;
             target = Vector3.UnitZ;
             upVector = Vector3.UnitY;
             MovementSpeed = .5f;
             RotationSpeed = .001f;
 
-            ModelView = Matrix4.LookAt(eye, target, upVector);
+            ModelView = Matrix4.LookAt(Eye, target, upVector);
             GL.MatrixMode(MatrixMode.Modelview);
             GL.LoadMatrix(ref ModelView);
         }
@@ -53,9 +55,9 @@ namespace Generating
 
         public void Translate(float x, float y, float z)
         {
-            eye.X += x;
-            eye.Y += y;
-            eye.Z += z;
+            Eye.X += x;
+            Eye.Y += y;
+            Eye.Z += z;
         }
 
         public void UpdateView(MouseState mouse, KeyboardState keyboard)
@@ -89,14 +91,24 @@ namespace Generating
                 Translate(MovementSpeed * (float)Math.Sin(facing + MathHelper.PiOver2), 0, MovementSpeed * (float)Math.Cos(facing + MathHelper.PiOver2));
             if (keyboard[Key.D])
                 Translate(-MovementSpeed * (float)Math.Sin(facing + MathHelper.PiOver2), 0, -MovementSpeed * (float)Math.Cos(facing + MathHelper.PiOver2));
-            
+            if (keyboard[Key.KeypadPlus])
+            {
+                scene.specularPower++;
+                Console.WriteLine(scene.specularPower);
+            }
+            if (keyboard[Key.KeypadMinus])
+            {
+                scene.specularPower--;
+                Console.WriteLine(scene.specularPower);
+            }
             if (keyboard[Key.LShift])
                 Translate(0, MovementSpeed, 0);
             if (keyboard[Key.LControl])
                 Translate(0, -MovementSpeed, 0);
 
-            ModelView = Matrix4.LookAt(eye, eye + new Vector3((float)Math.Sin(facing), (float)Math.Sin(pitch), (float)Math.Cos(facing)),
+            ModelView = Matrix4.LookAt(Eye, Eye + new Vector3((float)Math.Sin(facing), (float)Math.Sin(pitch), (float)Math.Cos(facing)),
                                                upVector);
+            Normal = Matrix4.Transpose(Matrix4.Invert(ModelView));
         }
     }
 }

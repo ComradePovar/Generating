@@ -7,6 +7,7 @@
 smooth in vec2 texCoord;
 smooth in vec3 normal;
 in float normalizedHeight;
+smooth in vec3 worldPos;
 smooth in vec4 eyeSpacePosition;
 
 out vec4 outputColor;
@@ -16,6 +17,8 @@ struct DirectionalLight
 	vec3 color;
 	vec3 direction;
 	float ambientIntensity;
+	float specularIntensity;
+	float specularPower;
 };
 struct Fog
 {
@@ -35,12 +38,15 @@ uniform sampler2D samplers[4];
 uniform vec4 color;
 uniform DirectionalLight light;
 uniform Fog fog;
+uniform vec3 eyePos;
 
 float getFogFactor(Fog fog, float coord);
+vec4 getSpecularColor();
 
 void main()
 {
 	outputColor = vec4(0.0, 0.0, 0.0, 1.0);
+	vec4 specularColor = vec4(0.0, 0.0, 0.0, 0.0);
 	float angle = abs(acos(normal.y));
 
 
@@ -78,6 +84,7 @@ void main()
 	}
 	else if (normalizedHeight < rockLowerBound){
 		float rockInfluence = (normalizedHeight - mudUpperBound) / (rockLowerBound - mudUpperBound);
+		specularColor = getSpecularColor() * rockInfluence;
 
 		texColor = texture2D(samplers[0], texCoord);
 		outputColor += texColor * rockInfluence;
@@ -86,12 +93,15 @@ void main()
 		outputColor += texColor * (1.0 - rockInfluence);
 	}
 	else {
+		specularColor = getSpecularColor();
 		texColor = texture2D(samplers[0], texCoord);
 		outputColor += texColor;
 	}
 
 	float diffuseIntensity = max(0.0, dot(normalize(normal), -light.direction));
-	outputColor *= color*vec4(light.color*(light.ambientIntensity+diffuseIntensity), 1.0);
+	vec4 diffuseColor = vec4(light.color*(light.ambientIntensity+diffuseIntensity), 1.0);
+
+	outputColor *= color*(diffuseColor + specularColor);
 
 	float fogCoord = abs(eyeSpacePosition.z / eyeSpacePosition.w);
 	outputColor = mix(outputColor, fog.color, getFogFactor(fog, fogCoord));
@@ -110,4 +120,18 @@ float getFogFactor(Fog fog, float coord)
 	result = 1.0 - clamp(result, 0.0, 1.0);
 
 	return result;
+}
+
+vec4 getSpecularColor()
+{
+		vec4 specularColor = vec4(0.0, 0.0, 0.0, 0.0);
+		vec3 reflectedVector = -normalize(reflect(light.direction, normal));
+		vec3 vertexToEyeVector = normalize(eyePos - worldPos);
+		float specularFactor = dot(vertexToEyeVector, reflectedVector);
+
+		if (specularFactor > 0){
+			specularFactor = pow(specularFactor, light.specularPower);
+			specularColor = vec4(light.color, 1.0) * light.specularIntensity * specularFactor;
+		}
+		return specularColor;
 }
