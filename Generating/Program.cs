@@ -41,8 +41,8 @@ namespace Generating
         private VAO terrain;
         private ShaderProgram shaderProgram;
         private Light light;
-        public float specularIntensity = 2;
-        public float specularPower = 10;
+        public float specularIntensity = 1;
+        public float specularPower = 2;
 
         Texture grass;
         Texture rock;

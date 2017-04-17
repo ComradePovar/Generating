@@ -22,7 +22,7 @@ void main()
 	gl_Position = projectionMatrix*eyeSpacePositionVertex;
 
 	texCoord = inCoord;
-	normal = (normalMatrix * vec4(inNormal, 0.0)).xyz;
+	normal = inNormal;//(normalMatrix * vec4(inNormal, 0.0)).xyz;
 	normalizedHeight = inNormalizedHeight;
 	worldPos = (modelMatrix*vec4(inPosition, 1.0)).xyz;
 	eyeSpacePosition = eyeSpacePositionVertex;

@@ -125,7 +125,8 @@ float getFogFactor(Fog fog, float coord)
 vec4 getSpecularColor()
 {
 		vec4 specularColor = vec4(0.0, 0.0, 0.0, 0.0);
-		vec3 reflectedVector = -normalize(reflect(light.direction, normal));
+		vec3 normalized = normalize(normal);
+		vec3 reflectedVector = normalize(reflect(light.direction, normalized));
 		vec3 vertexToEyeVector = normalize(eyePos - worldPos);
 		float specularFactor = dot(vertexToEyeVector, reflectedVector);
 

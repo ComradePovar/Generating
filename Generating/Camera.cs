@@ -101,6 +101,16 @@ namespace Generating
                 scene.specularPower--;
                 Console.WriteLine(scene.specularPower);
             }
+            if (keyboard[Key.Plus])
+            {
+                scene.specularIntensity++;
+                Console.WriteLine(scene.specularIntensity);
+            }
+            if (keyboard[Key.Minus])
+            {
+                scene.specularIntensity--;
+                Console.WriteLine(scene.specularIntensity);
+            }
             if (keyboard[Key.LShift])
                 Translate(0, MovementSpeed, 0);
             if (keyboard[Key.LControl])
