@@ -79,7 +79,7 @@ namespace Generating
         }
         ShaderProgram shader;
         VAO vao;
-        Vector3 eye = new Vector3(0f, 0f, 0f);
+        Vector3 eye = new Vector3(5f, 3f, -5f);
         protected override void OnRenderFrame(FrameEventArgs e)
         {
             base.OnRenderFrame(e);
@@ -160,6 +160,13 @@ namespace Generating
             new Vector3(0f, 0f, 1f),
         };
         float k;
+        Vector3[] sun = new Vector3[]
+        {
+            new Vector3(-9f, 4f, -9f),
+            new Vector3(-10f, 4f, -9f),
+            new Vector3(-10f, 5f, -9f),
+            new Vector3(-9f, 5f, -9f)
+        };
         void DrawTriangle()
         {
             GL.Enable(EnableCap.VertexArray);
@@ -193,9 +200,8 @@ namespace Generating
             //GL.DrawElements(BeginMode.Triangles, indices.Length, DrawElementsType.UnsignedInt, IntPtr.Zero);
             //GL.DrawArrays(BeginMode.Triangles, 0, indices.Length);
 
-            //Matrix4 model = Matrix4.CreateTranslation(0, 0, 1);
-            Matrix4 model = Matrix4.CreateRotationY(MathHelper.DegreesToRadians(k));
-            // eye = new Vector3(2f, 1f, 4f);
+            Matrix4 model = Matrix4.CreateTranslation(0, 0, 1);
+            //Matrix4 model = Matrix4.CreateRotationY(MathHelper.DegreesToRadians(k));
             k += 0.01f;
             Matrix4 view = Matrix4.LookAt(eye, new Vector3(0, 0, 0f), new Vector3(0.0f, 1.0f, 0.0f));
             Matrix4 normal = Matrix4.Transpose(Matrix4.Invert(view * model));
@@ -221,7 +227,7 @@ namespace Generating
             GL.Uniform1(ambientIntensity, 1f);
             GL.Uniform3(lColor, ref color);
             GL.Uniform1(specularPower, 128);
-            GL.Uniform1(specularIntensity, -100);
+            GL.Uniform1(specularIntensity, 100);
             GL.Uniform3(eyePos, ref eye);
             GL.UniformMatrix4(viewMatrix, false, ref view);
             GL.UniformMatrix4(modelMatrix, false, ref model);
@@ -230,10 +236,10 @@ namespace Generating
             //GL.MatrixMode(MatrixMode.Modelview);
             //GL.LoadMatrix(ref modelview);
             GL.DrawElements(BeginMode.Quads, indices.Length, DrawElementsType.UnsignedInt, IntPtr.Zero);
-            GL.UniformMatrix4(modelMatrix, false, ref model);
             //GL.Begin(BeginMode.Triangles);
-
-
+            
+            GL.UniformMatrix4(modelMatrix, false, ref model);
+            //GL.DrawElements(BeginMode.Quads, indices.Length, DrawElementsType.UnsignedInt, IntPtr.Zero);
             //GL.Color3(System.Drawing.Color.Red);
             //GL.TexCoord2(0, 1);
             //GL.Vertex3(-2.0f, -1.0f, 0f);
