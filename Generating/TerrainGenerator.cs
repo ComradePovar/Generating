@@ -50,54 +50,125 @@ namespace Generating
             float maxDistanceToCenter = (float)Math.Sqrt(Math.Pow(center.X, 2) + Math.Pow(center.Y, 2));
             float islandRadius = (float)width / 2;
             NormalizeHeightMap();
-            for (int i = 0; i < width; i++)
-                for (int j = 0; j < height; j++)
-                    NormalizedHeightMap[i, j] = Math.Max(0.0f, NormalizedHeightMap[i, j]);
 
-            save("HM1.jpg");
+            save("HM1.jpg", NormalizedHeightMap, new Color4(1.0f, 1.0f, 1.0f, 1.0f));
             for (int i = 0; i < Width; i++)
             {
                 for (int j = 0; j < Height; j++)
                 {
                     //круг
-                    //float distanceToIsland = (float)Math.Sqrt(Math.Pow(i - islandRadius, 2) + Math.Pow(j - islandRadius, 2));
+                    float distanceToIsland = (float)Math.Sqrt(Math.Pow(i - islandRadius, 2) + Math.Pow(j - islandRadius, 2));
                     //float distanceToCenter = (float)Math.Sqrt(Math.Pow(i - center.X, 2) + Math.Pow(j - center.Y, 2));
-                    //float maxWidth = islandRadius - 10.0f;
-                    //float delta = distanceToIsland / maxWidth;
-                    //float influence = delta * delta;
-                    //influence = influence > 1.0f ? 0.0f : 1.0f - influence;
-                    ////float jungleInfluence = 1 * (float)Math.Log((islandRadius - distanceToCenter) / islandRadius + 1);
-                    //NormalizedHeightMap[i, j] *= influence;
-                    //HeightMap[i, j] *= influence;
-
-                    //квадрат
-                    float distanceToIsland = (float)Math.Max(i - islandRadius, j - islandRadius);
-                    float distanceToCenter = (float)Math.Sqrt(Math.Pow(i - center.X, 2) + Math.Pow(j - center.Y, 2));
-                    float maxWidth = islandRadius;
+                    float maxWidth = islandRadius - 10.0f;
                     float delta = distanceToIsland / maxWidth;
                     float influence = delta * delta;
                     influence = influence > 1.0f ? 0.0f : 1.0f - influence;
-                    float jungleInfluence = 1.0f * (float)Math.Log((islandRadius - distanceToCenter) / islandRadius + 1);
+                    //float jungleInfluence = 1 * (float)Math.Log((islandRadius - distanceToCenter) / islandRadius + 1);
                     NormalizedHeightMap[i, j] *= influence;
                     HeightMap[i, j] *= influence;
+
+                    //квадрат
+                    //float distanceToIsland = (float)Math.Max(i - islandRadius, j - islandRadius);
+                    ////float distanceToCenter = (float)Math.Sqrt(Math.Pow(i - center.X, 2) + Math.Pow(j - center.Y, 2));
+                    //float maxWidth = islandRadius - 10f;
+                    //float delta = distanceToIsland / maxWidth;
+                    //float influence = delta * delta;
+                    //influence = influence > 1.0f ? 0.0f : 1.0f - influence;
+                    ////float jungleInfluence = 1.0f * (float)Math.Log((islandRadius - distanceToCenter) / islandRadius + 1);
+                    //NormalizedHeightMap[i, j] *= influence;
+                    //HeightMap[i, j] *= influence;
 
                     //дефолт
                 }
             }
-            save("HM2.jpg");
+            save("HM2.jpg", NormalizedHeightMap, new Color4(1.0f, 1.0f, 1.0f, 1.0f));
+            float[,] moistureMap = normalizeMoisture(MoistureMap());
+            for (int i = 0; i < width; i++)
+                for (int j = 0; j < height; j++)
+                {
+                    moistureMap[i, j] *= (NormalizedHeightMap[i, j]) == 0.0f? 0.0f : (1.0f - NormalizedHeightMap[i, j]);
+                }
+            save("MoistureMap.jpg", moistureMap, new Color4(1.0f, 0.0f, 0.0f, 1.0f));
         }
-        void save(string name)
+        void save(string name, float[,] array, Color4 c)
         {
 
             Bitmap bitmap = new Bitmap(Width, Height);
-            float[,] normalizedHeightMap = NormalizedHeightMap;
             for (int i = 0; i < Width; i++)
                 for (int j = 0; j < Height; j++)
                 {
-                    Color4 color = new Color4(normalizedHeightMap[i, j], normalizedHeightMap[i, j], normalizedHeightMap[i, j], 1);
+                    Color4 color = new Color4(array[i, j], array[i, j], array[i, j], 1);
+                    color.R *= c.R;
+                    color.G *= c.G;
+                    color.B *= c.B;
                     bitmap.SetPixel(i, j, (Color)color);
                 }
             bitmap.Save("Assets/" + name, System.Drawing.Imaging.ImageFormat.Jpeg);
+        }
+        float[,] MoistureMap()
+        {
+            float[,] moistureMap = new float[Width, Height];
+            //Noise noise = new Noise();
+            //float detail = 10;
+            //float passes = 10;
+            //for (int i = 0; i < Width; i++)
+            //    for (int j = 0; j < Height; j++)
+            //        moistureMap[i, j] = noise.NoiseAt((float)i / Width * detail, (float)j / Height * detail, passes);
+            int maxIndex = Width - 1;
+            float displacement;
+            //Init corners
+
+            for (int squareSize = maxIndex; squareSize >= 2; squareSize /= 2)
+            {
+                int stepSize = squareSize / 2;
+                displacement = (Max - Min) * Roughness * ((float)squareSize / maxIndex);
+
+                //Squares
+                for (int x = 0; x < maxIndex; x += squareSize)
+                {
+                    for (int y = 0; y < maxIndex; y += squareSize)
+                    {
+                        moistureMap[x + stepSize, y + stepSize] = Math.Abs(GetRandomFloat(-displacement, displacement) +
+                                                                (moistureMap[x, y] + moistureMap[x + squareSize, y] + moistureMap[x, y + squareSize] +
+                                                                 moistureMap[x + squareSize, y + squareSize]) / 4);
+                    }
+                }
+
+                //Diamonds
+                // if the data should wrap then replace Width with maxIndex and uncomment 2 ifs below
+                for (int x = 0; x < Width; x += stepSize)
+                {
+                    for (int y = (x + stepSize) % squareSize; y < Width; y += squareSize)
+                    {
+                        moistureMap[x, y] = Math.Abs(GetRandomFloat(-displacement, displacement) +
+                                          (moistureMap[(x - stepSize + Width) % Width, y] + moistureMap[(x + stepSize) % Width, y] +
+                                           moistureMap[x, (y + stepSize) % Width] + moistureMap[x, (y - stepSize + Width) % Width]) / 4);
+                        //if (x == 0)
+                        //    HeightMap[maxIndex, y] = HeightMap[x, y];
+                        //if (y == 0)
+                        //    HeightMap[x, maxIndex] = HeightMap[x, y];
+                    }
+                }
+            }
+            return moistureMap;
+        }
+        float[,] normalizeMoisture(float[,] ar)
+        {
+            float max = float.MinValue;
+            float min = float.MaxValue;
+            for (int i = 0; i < Width; i++)
+                for (int j = 0; j < Height; j++)
+                {
+                    if (ar[i, j] > max)
+                        max = ar[i, j];
+                    if (ar[i, j] < min)
+                        min = ar[i, j];
+                }
+
+            for (int i = 0; i < Width; i++)
+                for (int j = 0; j < Height; j++)
+                    ar[i, j] = (ar[i, j] - min) / (max - min);
+            return ar;
         }
         private void DiamondSquareAlgorithm(float topLeft, float bottomLeft, float bottomRight, float topRight)
         {
