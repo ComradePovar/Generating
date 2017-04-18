@@ -38,7 +38,7 @@ namespace Generating
             Eye = Vector3.Zero;
             target = Vector3.UnitZ;
             upVector = Vector3.UnitY;
-            MovementSpeed = .5f;
+            MovementSpeed = 5.5f;
             RotationSpeed = .001f;
 
             ModelView = Matrix4.LookAt(Eye, target, upVector);

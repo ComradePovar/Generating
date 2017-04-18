@@ -31,10 +31,12 @@ struct Fog
 
 // Samplers:
 // 0) rock;
-// 1) grass;
-// 2) mud;
+// 1) water;
+// 2) mossyrock;
 // 3) dirt;
-uniform sampler2D samplers[4];
+// 4) sand;
+// 5) darkgrass;
+uniform sampler2D samplers[6];
 uniform vec4 color;
 uniform DirectionalLight light;
 uniform Fog fog;
@@ -50,40 +52,70 @@ void main()
 	float angle = abs(acos(normal.y));
 
 
-	const float grassLowerBound = 0.0;
-	const float grassUpperBound = 0.5;
-	const float mudLowerBound = 0.6;
-	const float mudUpperBound = 0.7;
+	const float waterLowerBound = 0.0;
+	const float waterUpperBound = 0.13;
+	const float sandLowerBound = 0.18;
+	const float sandUpperBound = 0.21;
+	const float darkgrassLowerBound = 0.28;
+	const float darkgrassUpperBound = 0.5;
+	const float mossyrockLowerBound = 0.6;
+	const float mossyrockUpperBound = 0.7;
 	const float rockLowerBound = 0.8;
 	const float rockUpperBound = 1.0;
 
 	bool isSteep = angle > PIOver4;
-	float steepInfluence = angle * (grassUpperBound - normalizedHeight)*4/ PIOver2;
+	float steepInfluence = angle * (waterUpperBound - normalizedHeight)*4/ PIOver2;
 
 	vec4 texColor = vec4(0.0, 0.0, 0.0, 1.0);
 
-	if (normalizedHeight <= grassUpperBound){
+	if (normalizedHeight <= waterUpperBound){
 		texColor = texture2D(samplers[3], texCoord);
 		outputColor += texColor * steepInfluence;
 		texColor = texture2D(samplers[1], texCoord);
 		outputColor += texColor * (1 - steepInfluence);
 	}
-	else if (normalizedHeight < mudLowerBound){
-	
-		float mudInfluence = (normalizedHeight - grassUpperBound) / (mudLowerBound - grassUpperBound);
+	else if (normalizedHeight < sandLowerBound){
+		float sandInfluence = (normalizedHeight - waterUpperBound) / (sandLowerBound - waterUpperBound);
 
-		texColor = texture2D(samplers[2], texCoord);
-		outputColor += texColor * mudInfluence;
+		texColor = texture2D(samplers[4], texCoord);
+		outputColor += texColor * sandInfluence;
 
 		texColor = texture2D(samplers[1], texCoord);
-		outputColor += texColor * (1.0 - mudInfluence);
+		outputColor += texColor * (1.0 - sandInfluence);
 	}
-	else if (normalizedHeight <= mudUpperBound){
+	else if (normalizedHeight <= sandUpperBound){
+		texColor = texture2D(samplers[4], texCoord);
+		outputColor += texColor;
+	}
+	else if (normalizedHeight < darkgrassLowerBound){
+		float darkgrassInfluence = (normalizedHeight - sandUpperBound) / (darkgrassLowerBound - sandUpperBound);
+
+		texColor = texture2D(samplers[5], texCoord);
+		outputColor += texColor * darkgrassInfluence;
+
+		texColor = texture2D(samplers[4], texCoord);
+		outputColor += texColor * (1.0 - darkgrassInfluence);
+	}
+	else if (normalizedHeight <= darkgrassUpperBound){
+		texColor = texture2D(samplers[5], texCoord);
+		outputColor += texColor;
+	}
+	else if (normalizedHeight < mossyrockLowerBound){
+	
+		float mossyrockInfluence = (normalizedHeight - darkgrassUpperBound) / (mossyrockLowerBound - darkgrassUpperBound);
+
+		texColor = texture2D(samplers[2], texCoord);
+		outputColor += texColor * mossyrockInfluence;
+
+		texColor = texture2D(samplers[5], texCoord);
+		outputColor += texColor * (1.0 - mossyrockInfluence);
+	}
+	else if (normalizedHeight <= mossyrockUpperBound){
 		texColor = texture2D(samplers[2], texCoord);
 		outputColor += texColor;
 	}
 	else if (normalizedHeight < rockLowerBound){
-		float rockInfluence = (normalizedHeight - mudUpperBound) / (rockLowerBound - mudUpperBound);
+		float rockInfluence = (normalizedHeight - mossyrockUpperBound) / (rockLowerBound - mossyrockUpperBound);
 		specularColor = getSpecularColor() * rockInfluence;
 
 		texColor = texture2D(samplers[0], texCoord);
@@ -99,7 +131,9 @@ void main()
 	}
 
 	float diffuseIntensity = max(0.0, dot(normalize(normal), -light.direction));
-	vec4 diffuseColor = vec4(light.color*(light.ambientIntensity+diffuseIntensity), 1.0);
+	vec4 diffuseColor = vec4(1.0, 1.0, 1.0, 1.0);
+	if (normalizedHeight >= waterUpperBound)
+		diffuseColor = vec4(light.color*(light.ambientIntensity+diffuseIntensity), 1.0);
 
 	outputColor *= color*(diffuseColor + specularColor);
 

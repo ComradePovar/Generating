@@ -15,7 +15,6 @@ using Generating.Shaders;
  *- 10) UI для задания параметров карты;
  *- 9) Доработать алгоритм генерации;
  *- 6) Shadow map;
- *- 5) specular light;
  *- 8) terrain patterns;
  *- 7) correct blending, texture splatting;
  * */
@@ -24,15 +23,15 @@ namespace Generating
     enum RenderMode { Mesh, Textured }
     class Game : GameWindow
     {
-        private int W = 513;
-        private int H = 513;
+        private int W = 1025;
+        private int H = 1025;
         TerrainGenerator terrainGenerator;
         Camera camera;
         
         float zoom = 1f;
         private float min = 0;
-        private float max = 5;
-        private float roughness = 15f;
+        private float max = 10;
+        private float roughness = 20f;
         private float topLeft = 0;
         private float bottomLeft = 0;
         private float bottomRight = 0;
@@ -44,10 +43,12 @@ namespace Generating
         public float specularIntensity = 1;
         public float specularPower = 2;
 
-        Texture grass;
+        Texture water;
         Texture rock;
-        Texture mud;
+        Texture mossyrock;
         Texture dirt;
+        Texture sand;
+        Texture darkgrass;
         Vector4 FogColor;
         Matrix4 model = Matrix4.Identity;
         
@@ -76,6 +77,9 @@ namespace Generating
             shaderProgram.Uniforms["samplers[0]"] = GL.GetUniformLocation(shaderProgram.ID, "samplers[0]");
             shaderProgram.Uniforms["samplers[1]"] = GL.GetUniformLocation(shaderProgram.ID, "samplers[1]");
             shaderProgram.Uniforms["samplers[2]"] = GL.GetUniformLocation(shaderProgram.ID, "samplers[2]");
+            shaderProgram.Uniforms["samplers[3]"] = GL.GetUniformLocation(shaderProgram.ID, "samplers[3]");
+            shaderProgram.Uniforms["samplers[4]"] = GL.GetUniformLocation(shaderProgram.ID, "samplers[4]");
+            shaderProgram.Uniforms["samplers[5]"] = GL.GetUniformLocation(shaderProgram.ID, "samplers[5]");
             shaderProgram.Uniforms["light.color"] = GL.GetUniformLocation(shaderProgram.ID, "light.color");
             shaderProgram.Uniforms["light.direction"] = GL.GetUniformLocation(shaderProgram.ID, "light.direction");
             shaderProgram.Uniforms["light.ambientIntensity"] = GL.GetUniformLocation(shaderProgram.ID, "light.ambientIntensity");
@@ -105,9 +109,11 @@ namespace Generating
             };
             FogColor = new Vector4(0.5f, 0.5f, 0.5f, 1.0f);
             rock = new Texture("rock.jpg");
-            mud = new Texture("mossyrock.jpg");
-            grass = new Texture("grass2.jpg");
+            mossyrock = new Texture("mossyrock.jpg");
+            water = new Texture("water.jpg");//grass2.jpg || water.jpg
+            darkgrass = new Texture("darkgrass.jpg");
             dirt = new Texture("dirt.jpg");
+            sand = new Texture("sand.jpg");
             //darkGrass.SetFiltering(TextureMinFilter.Linear, TextureMagFilter.Linear);
         }
         protected override void OnLoad(EventArgs e)
@@ -248,12 +254,26 @@ namespace Generating
                 GL.ActiveTexture(TextureUnit.Texture0);
                 GL.BindTexture(TextureTarget.Texture2D, rock.ID);
                 GL.BindSampler((int)TextureUnit.Texture0, rock.SamplerID);
+
                 GL.ActiveTexture(TextureUnit.Texture1);
-                GL.BindTexture(TextureTarget.Texture2D, grass.ID);
-                GL.BindSampler((int)TextureUnit.Texture1, grass.SamplerID);
+                GL.BindTexture(TextureTarget.Texture2D, water.ID);
+                GL.BindSampler((int)TextureUnit.Texture1, water.SamplerID);
+
                 GL.ActiveTexture(TextureUnit.Texture2);
-                GL.BindTexture(TextureTarget.Texture2D, mud.ID);
-                GL.BindSampler((int)TextureUnit.Texture2, mud.SamplerID);
+                GL.BindTexture(TextureTarget.Texture2D, mossyrock.ID);
+                GL.BindSampler((int)TextureUnit.Texture2, mossyrock.SamplerID);
+
+                GL.ActiveTexture(TextureUnit.Texture3);
+                GL.BindTexture(TextureTarget.Texture2D, dirt.ID);
+                GL.BindSampler((int)TextureUnit.Texture2, dirt.SamplerID);
+
+                GL.ActiveTexture(TextureUnit.Texture4);
+                GL.BindTexture(TextureTarget.Texture2D, sand.ID);
+                GL.BindSampler((int)TextureUnit.Texture2, sand.SamplerID);
+
+                GL.ActiveTexture(TextureUnit.Texture5);
+                GL.BindTexture(TextureTarget.Texture2D, darkgrass.ID);
+                GL.BindSampler((int)TextureUnit.Texture2, darkgrass.SamplerID);
 
                 shaderProgram.Start();
                 
@@ -275,6 +295,9 @@ namespace Generating
             GL.Uniform1(shaderProgram.Uniforms["samplers[0]"], (int)TextureUnit.Texture0);
             GL.Uniform1(shaderProgram.Uniforms["samplers[1]"], 1);
             GL.Uniform1(shaderProgram.Uniforms["samplers[2]"], 2);
+            GL.Uniform1(shaderProgram.Uniforms["samplers[3]"], 3);
+            GL.Uniform1(shaderProgram.Uniforms["samplers[4]"], 4);
+            GL.Uniform1(shaderProgram.Uniforms["samplers[5]"], 5);
             GL.Uniform4(shaderProgram.Uniforms["color"], new Vector4(1.0f, 1.0f, 1.0f, 1.0f));
             GL.Uniform3(shaderProgram.Uniforms["light.color"], ref light.Color);
             GL.Uniform3(shaderProgram.Uniforms["light.direction"], ref light.Direction);

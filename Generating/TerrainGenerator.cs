@@ -29,10 +29,53 @@ namespace Generating
             Roughness = roughness;
             Min = min;
             Max = max;
-
-            HeightMap = new float[Width, Height];
-
+            Noise noise = new Noise();
+            noise.Reseed();
+            HeightMap = new float[Width, Height]; float ma = float.MinValue; float mi = float.MaxValue;
+            for (int i = 0; i < width; i++)
+                for (int j = 0; j < height; j++)
+                {
+                    HeightMap[i, j] = noise.NoiseAt((float)i / width, (float)j / height, 2);
+                    if (HeightMap[i, j] > ma)
+                        ma = HeightMap[i, j];
+                    if (HeightMap[i, j] < mi)
+                        mi = HeightMap[i, j];
+                }
+            
             DiamondSquareAlgorithm(topLeft, bottomLeft, bottomRight, topRight);
+            Vector2 center = new Vector2(width / 2, height / 2);
+            float maxDistanceToCenter = (float)Math.Sqrt(Math.Pow(center.X, 2) + Math.Pow(center.Y, 2));
+            float islandRadius = (float)width / 2;
+            NormalizeHeightMap();
+            for (int i = 0; i < Width; i++)
+            {
+                for (int j = 0; j < Height; j++)
+                {
+                    //круг
+                    //float distanceToIsland = (float)Math.Sqrt(Math.Pow(i - islandRadius, 2) + Math.Pow(j - islandRadius, 2));
+                    //float distanceToCenter = (float)Math.Sqrt(Math.Pow(i - center.X, 2) + Math.Pow(j - center.Y, 2));
+                    //float maxWidth = islandRadius;
+                    //float delta = distanceToIsland / maxWidth;
+                    //float influence = delta * delta;
+                    //influence = influence > 1.0f ? 0.0f : 1.0f - influence;
+                    //float jungleInfluence = 1 * (float)Math.Log((islandRadius - distanceToCenter) / islandRadius + 1);
+                    //NormalizedHeightMap[i, j] *= influence;
+                    //HeightMap[i, j] = Math.Abs(HeightMap[i, j]) * influence;
+
+                    //квадрат
+                    float distanceToIsland = (float)Math.Max(i - islandRadius, j - islandRadius);
+                    float distanceToCenter = (float)Math.Sqrt(Math.Pow(i - center.X, 2) + Math.Pow(j - center.Y, 2));
+                    float maxWidth = islandRadius;
+                    float delta = distanceToIsland / maxWidth;
+                    float influence = delta * delta;
+                    influence = influence > 1.0f ? 0.0f : 1.0f - influence;
+                    float jungleInfluence = 1.0f * (float)Math.Log((islandRadius - distanceToCenter) / islandRadius + 1);
+                    NormalizedHeightMap[i, j] *= influence;
+                    HeightMap[i, j] = Math.Abs(HeightMap[i, j]) * influence;
+
+                    //дефолт
+                }
+            }
         }
 
         private void DiamondSquareAlgorithm(float topLeft, float bottomLeft, float bottomRight, float topRight)
@@ -185,7 +228,7 @@ namespace Generating
             return new Vector3((vector1.X + vector2.X) / 2, (vector1.Y + vector2.Y) / 2, (vector1.Z + vector2.Z) / 2);
         }
 
-        public void NormalizeHeightMap(VAO terrain)
+        public void NormalizeHeightMap(VAO terrain=null)
         {
             NormalizedHeightMap = new float[Width, Height];
             float max = float.MinValue, min = float.MaxValue;
@@ -201,7 +244,7 @@ namespace Generating
             for (int i = 0; i < Width; i++)
                 for (int j = 0; j < Height; j++)
                     NormalizedHeightMap[i, j] = (HeightMap[i, j] - min) / (max - min);
-            terrain.BindNormalizedHeightsBuffer(NormalizedHeightMap);
+            terrain?.BindNormalizedHeightsBuffer(NormalizedHeightMap);
         }
         private float GetRandomFloat(float min, float max)
         {

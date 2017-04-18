@@ -54,6 +54,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Light.cs" />
+    <Compile Include="Noise.cs" />
     <Compile Include="Shaders\Shader.cs" />
     <Compile Include="Shaders\ShaderProgram.cs" />
     <Compile Include="Texture.cs" />
@@ -89,7 +90,6 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Assets\grass.jpg" />
     <EmbeddedResource Include="Assets\mud.jpg" />
     <EmbeddedResource Include="Assets\rock.jpg" />
   </ItemGroup>
@@ -101,6 +101,13 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Assets\mossyrock.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Assets\water.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Assets\darkgrass.jpg" />
+    <EmbeddedResource Include="Assets\sand.jpg" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
