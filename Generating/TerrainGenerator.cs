@@ -4,6 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using OpenTK;
+using System.Drawing.Imaging;
+using System.Drawing;
+using OpenTK.Graphics;
 
 namespace Generating
 {
@@ -47,6 +50,11 @@ namespace Generating
             float maxDistanceToCenter = (float)Math.Sqrt(Math.Pow(center.X, 2) + Math.Pow(center.Y, 2));
             float islandRadius = (float)width / 2;
             NormalizeHeightMap();
+            for (int i = 0; i < width; i++)
+                for (int j = 0; j < height; j++)
+                    NormalizedHeightMap[i, j] = Math.Max(0.0f, NormalizedHeightMap[i, j]);
+
+            save("HM1.jpg");
             for (int i = 0; i < Width; i++)
             {
                 for (int j = 0; j < Height; j++)
@@ -54,13 +62,13 @@ namespace Generating
                     //круг
                     //float distanceToIsland = (float)Math.Sqrt(Math.Pow(i - islandRadius, 2) + Math.Pow(j - islandRadius, 2));
                     //float distanceToCenter = (float)Math.Sqrt(Math.Pow(i - center.X, 2) + Math.Pow(j - center.Y, 2));
-                    //float maxWidth = islandRadius;
+                    //float maxWidth = islandRadius - 10.0f;
                     //float delta = distanceToIsland / maxWidth;
                     //float influence = delta * delta;
                     //influence = influence > 1.0f ? 0.0f : 1.0f - influence;
-                    //float jungleInfluence = 1 * (float)Math.Log((islandRadius - distanceToCenter) / islandRadius + 1);
+                    ////float jungleInfluence = 1 * (float)Math.Log((islandRadius - distanceToCenter) / islandRadius + 1);
                     //NormalizedHeightMap[i, j] *= influence;
-                    //HeightMap[i, j] = Math.Abs(HeightMap[i, j]) * influence;
+                    //HeightMap[i, j] *= influence;
 
                     //квадрат
                     float distanceToIsland = (float)Math.Max(i - islandRadius, j - islandRadius);
@@ -71,13 +79,26 @@ namespace Generating
                     influence = influence > 1.0f ? 0.0f : 1.0f - influence;
                     float jungleInfluence = 1.0f * (float)Math.Log((islandRadius - distanceToCenter) / islandRadius + 1);
                     NormalizedHeightMap[i, j] *= influence;
-                    HeightMap[i, j] = Math.Abs(HeightMap[i, j]) * influence;
+                    HeightMap[i, j] *= influence;
 
                     //дефолт
                 }
             }
+            save("HM2.jpg");
         }
+        void save(string name)
+        {
 
+            Bitmap bitmap = new Bitmap(Width, Height);
+            float[,] normalizedHeightMap = NormalizedHeightMap;
+            for (int i = 0; i < Width; i++)
+                for (int j = 0; j < Height; j++)
+                {
+                    Color4 color = new Color4(normalizedHeightMap[i, j], normalizedHeightMap[i, j], normalizedHeightMap[i, j], 1);
+                    bitmap.SetPixel(i, j, (Color)color);
+                }
+            bitmap.Save("Assets/" + name, System.Drawing.Imaging.ImageFormat.Jpeg);
+        }
         private void DiamondSquareAlgorithm(float topLeft, float bottomLeft, float bottomRight, float topRight)
         {
             int maxIndex = Width - 1;
@@ -98,9 +119,9 @@ namespace Generating
                 {
                     for (int y = 0; y < maxIndex; y += squareSize)
                     {
-                        HeightMap[x + stepSize, y + stepSize] = GetRandomFloat(-displacement, displacement) +
+                        HeightMap[x + stepSize, y + stepSize] = Math.Abs(GetRandomFloat(-displacement, displacement) +
                                                                 (HeightMap[x, y] + HeightMap[x + squareSize, y] + HeightMap[x, y + squareSize] +
-                                                                 HeightMap[x + squareSize, y + squareSize]) / 4;
+                                                                 HeightMap[x + squareSize, y + squareSize]) / 4);
                     }
                 }
 
@@ -110,9 +131,9 @@ namespace Generating
                 {
                     for (int y = (x + stepSize) % squareSize; y < Width; y += squareSize)
                     {
-                        HeightMap[x, y] = GetRandomFloat(-displacement, displacement) +
+                        HeightMap[x, y] = Math.Abs(GetRandomFloat(-displacement, displacement) +
                                           (HeightMap[(x - stepSize + Width) % Width, y] + HeightMap[(x + stepSize) % Width, y] +
-                                           HeightMap[x, (y + stepSize) % Width] + HeightMap[x, (y - stepSize + Width) % Width]) / 4;
+                                           HeightMap[x, (y + stepSize) % Width] + HeightMap[x, (y - stepSize + Width) % Width]) / 4);
                         //if (x == 0)
                         //    HeightMap[maxIndex, y] = HeightMap[x, y];
                         //if (y == 0)
