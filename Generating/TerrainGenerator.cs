@@ -22,7 +22,14 @@ namespace Generating
         public float[,] NormalHeightMap { get; private set; }
         public float Min { get; set; }
         public float Max { get; set; }
-
+        // 0) rock;
+        // 1) water;
+        // 2) mossyrock;
+        // 3) dirt;
+        // 4) sand;
+        // 5) darkgrass;
+        public float[,] BiomMap { get; private set; }
+        public float[,] MoistureMap { get; private set; }
         private static Random rand = new Random();
 
         public void GenerateHeightMap(int width, int height, float topLeft, float bottomLeft, float bottomRight, float topRight, float roughness, float min, float max)
@@ -82,13 +89,13 @@ namespace Generating
                 }
             }
             save("HM2.jpg", NormalizedHeightMap, new Color4(1.0f, 1.0f, 1.0f, 1.0f));
-            float[,] moistureMap = normalizeMoisture(MoistureMap());
+            MoistureMap = normalizeMoisture(CreateMoistureMap());
             for (int i = 0; i < width; i++)
                 for (int j = 0; j < height; j++)
                 {
-                    moistureMap[i, j] *= (NormalizedHeightMap[i, j]) == 0.0f? 0.0f : (1.0f - NormalizedHeightMap[i, j]);
+                    MoistureMap[i, j] *= (NormalizedHeightMap[i, j]) == 0.0f? 0.0f : (1.0f - NormalizedHeightMap[i, j]);
                 }
-            save("MoistureMap.jpg", moistureMap, new Color4(1.0f, 0.0f, 0.0f, 1.0f));
+            save("MoistureMap.jpg", MoistureMap, new Color4(1.0f, 0.0f, 0.0f, 1.0f));
         }
         void save(string name, float[,] array, Color4 c)
         {
@@ -105,7 +112,7 @@ namespace Generating
                 }
             bitmap.Save("Assets/" + name, System.Drawing.Imaging.ImageFormat.Jpeg);
         }
-        float[,] MoistureMap()
+        float[,] CreateMoistureMap()
         {
             float[,] moistureMap = new float[Width, Height];
             //Noise noise = new Noise();
@@ -243,6 +250,7 @@ namespace Generating
             //terrain.BindColorsBuffer(colors);
             CreateNormalMap(out normals);
             terrain.BindNormalsBuffer(normals);
+            terrain.BindMoisturesBuffer(MoistureMap);
         }
 
 

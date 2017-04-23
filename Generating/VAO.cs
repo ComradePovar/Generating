@@ -17,6 +17,7 @@ namespace Generating
         public int NormalsBuffer { get; private set; } = -1;
         public int ColorsBuffer { get; private set; } = -1;
         public int NormalizedHeightsBuffer { get; private set; } = -1;
+        public int MoisturesBuffer { get; private set; } = -1;
 
         public int IndicesCount;
 
@@ -25,6 +26,17 @@ namespace Generating
             ID = GL.GenVertexArray();
         }
 
+        public void BindMoisturesBuffer(float[,] moistureMap)
+        {
+            float[] moistures = new float[moistureMap.GetLength(0) * moistureMap.GetLength(1)];
+            for (int i = 0; i < moistureMap.GetLength(0); i++)
+                for (int j = 0; j < moistureMap.GetLength(1); j++)
+                    moistures[i * moistureMap.GetLength(0) + j] = moistureMap[i, j];
+            MoisturesBuffer = GL.GenBuffer();
+            GL.BindBuffer(BufferTarget.ArrayBuffer, MoisturesBuffer);
+            GL.BufferData(BufferTarget.ArrayBuffer, (IntPtr)(moistures.Length * sizeof(float)), moistures, BufferUsageHint.StaticDraw);
+            GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
+        }
         public void BindVerticesBuffer(Vector3[] vertices)
         {
             VerticesBuffer = GL.GenBuffer();

@@ -96,6 +96,7 @@ namespace Generating
             shaderProgram.AttribLocation["inCoord"] = GL.GetAttribLocation(shaderProgram.ID, "inCoord");
             shaderProgram.AttribLocation["inNormal"] = GL.GetAttribLocation(shaderProgram.ID, "inNormal");
             shaderProgram.AttribLocation["inNormalizedHeight"] = GL.GetAttribLocation(shaderProgram.ID, "inNormalizedHeight");
+            shaderProgram.AttribLocation["inMoisture"] = GL.GetAttribLocation(shaderProgram.ID, "inMoisture");
 
             terrainGenerator = new TerrainGenerator();
             camera = Camera.Instance;
@@ -250,6 +251,9 @@ namespace Generating
                 GL.EnableVertexAttribArray(shaderProgram.AttribLocation["inNormalizedHeight"]);
                 GL.VertexAttribPointer(shaderProgram.AttribLocation["inNormalizedHeight"], 1, VertexAttribPointerType.Float, false, 0, 0);
 
+                GL.BindBuffer(BufferTarget.ArrayBuffer, terrain.MoisturesBuffer);
+                GL.EnableVertexAttribArray(shaderProgram.AttribLocation["inMoisture"]);
+                GL.VertexAttribPointer(shaderProgram.AttribLocation["inMoisture"], 1, VertexAttribPointerType.Float, false, 0, 0);
 
                 GL.ActiveTexture(TextureUnit.Texture0);
                 GL.BindTexture(TextureTarget.Texture2D, rock.ID);
