@@ -5,6 +5,7 @@ using OpenTK.Graphics;
 using OpenTK.Graphics.OpenGL;
 using System.Drawing;
 using Generating.Shaders;
+using Generating.GUI;
 
 
 /* TODO:
@@ -38,7 +39,10 @@ namespace Generating
         private float topRight = 0;
         private RenderMode renderMode = RenderMode.Textured;
         private VAO terrain;
-        private ShaderProgram shaderProgram;
+        private VAO waterPlane;
+        private ShaderProgram terrainShader;
+        private ShaderProgram waterShader;
+        private ShaderProgram guiShader;
         private Light light;
         public float specularIntensity = 1;
         public float specularPower = 2;
@@ -50,7 +54,13 @@ namespace Generating
         Texture sand;
         Texture darkgrass;
         Vector4 FogColor;
+        Vector4 HorizontalPlaneReflection;
+        Vector4 HorizontalPlaneRefraction;
+        Vector4 HorizontalPlaneWorld;
         Matrix4 model = Matrix4.Identity;
+        WaterFBO fbo;
+        Gui guiReflect;
+        Gui guiRefract;
         
         public float Roughness { get; set; }
         public float Min { get; set; }
@@ -61,46 +71,74 @@ namespace Generating
             : base(800, 600, GraphicsMode.Default, "OpenTK")
         {
             VSync = VSyncMode.On;
+            
+            waterShader = new ShaderProgram();
+            Shader waterVertexShader = new Shader("water.vert", ShaderType.VertexShader);
+            Shader waterFragmentShader = new Shader("water.frag", ShaderType.FragmentShader);
+            waterShader.AttachShaders(waterVertexShader, waterFragmentShader);
+            waterShader.LinkProgram();
 
-            shaderProgram = new ShaderProgram();
+            guiShader = new ShaderProgram();
+            Shader guiVertexShader = new Shader("gui.vert", ShaderType.VertexShader);
+            Shader guiFragmentShader = new Shader("gui.frag", ShaderType.FragmentShader);
+            guiShader.AttachShaders(guiVertexShader, guiFragmentShader);
+            guiShader.LinkProgram();
+
+            terrainShader = new ShaderProgram();
             Shader vertexShader = new Shader("shader.vert", ShaderType.VertexShader);
             Shader fogShader = new Shader("fogShader.vert", ShaderType.VertexShader);
             Shader fragmentShader = new Shader("mainShader.frag", ShaderType.FragmentShader);
-            shaderProgram.AttachShaders(fogShader, vertexShader, fragmentShader);
-            shaderProgram.LinkProgram();
-            
-            shaderProgram.Uniforms["modelMatrix"] = GL.GetUniformLocation(shaderProgram.ID, "modelMatrix");
-            shaderProgram.Uniforms["viewMatrix"] = GL.GetUniformLocation(shaderProgram.ID, "viewMatrix");
-            shaderProgram.Uniforms["projectionMatrix"] = GL.GetUniformLocation(shaderProgram.ID, "projectionMatrix");
-            shaderProgram.Uniforms["normalMatrix"] = GL.GetUniformLocation(shaderProgram.ID, "normalMatrix");
-            shaderProgram.Uniforms["color"] = GL.GetUniformLocation(shaderProgram.ID, "color");
-            shaderProgram.Uniforms["samplers[0]"] = GL.GetUniformLocation(shaderProgram.ID, "samplers[0]");
-            shaderProgram.Uniforms["samplers[1]"] = GL.GetUniformLocation(shaderProgram.ID, "samplers[1]");
-            shaderProgram.Uniforms["samplers[2]"] = GL.GetUniformLocation(shaderProgram.ID, "samplers[2]");
-            shaderProgram.Uniforms["samplers[3]"] = GL.GetUniformLocation(shaderProgram.ID, "samplers[3]");
-            shaderProgram.Uniforms["samplers[4]"] = GL.GetUniformLocation(shaderProgram.ID, "samplers[4]");
-            shaderProgram.Uniforms["samplers[5]"] = GL.GetUniformLocation(shaderProgram.ID, "samplers[5]");
-            shaderProgram.Uniforms["light.color"] = GL.GetUniformLocation(shaderProgram.ID, "light.color");
-            shaderProgram.Uniforms["light.direction"] = GL.GetUniformLocation(shaderProgram.ID, "light.direction");
-            shaderProgram.Uniforms["light.ambientIntensity"] = GL.GetUniformLocation(shaderProgram.ID, "light.ambientIntensity");
-            shaderProgram.Uniforms["light.specularIntensity"] = GL.GetUniformLocation(shaderProgram.ID, "light.specularIntensity");
-            shaderProgram.Uniforms["light.specularPower"] = GL.GetUniformLocation(shaderProgram.ID, "light.specularPower");
-            shaderProgram.Uniforms["eyePos"] = GL.GetUniformLocation(shaderProgram.ID, "eyePos");
-            shaderProgram.Uniforms["fog.color"] = GL.GetUniformLocation(shaderProgram.ID, "fog.color");
-            shaderProgram.Uniforms["fog.start"] = GL.GetUniformLocation(shaderProgram.ID, "fog.start");
-            shaderProgram.Uniforms["fog.end"] = GL.GetUniformLocation(shaderProgram.ID, "fog.end");
-            shaderProgram.Uniforms["fog.density"] = GL.GetUniformLocation(shaderProgram.ID, "fog.density");
-            shaderProgram.Uniforms["fog.type"] = GL.GetUniformLocation(shaderProgram.ID, "fog.type");
+            terrainShader.AttachShaders(fogShader, vertexShader, fragmentShader);
+            terrainShader.LinkProgram();
 
-            shaderProgram.AttribLocation["inPosition"] = GL.GetAttribLocation(shaderProgram.ID, "inPosition");
-            shaderProgram.AttribLocation["inCoord"] = GL.GetAttribLocation(shaderProgram.ID, "inCoord");
-            shaderProgram.AttribLocation["inNormal"] = GL.GetAttribLocation(shaderProgram.ID, "inNormal");
-            shaderProgram.AttribLocation["inNormalizedHeight"] = GL.GetAttribLocation(shaderProgram.ID, "inNormalizedHeight");
-            shaderProgram.AttribLocation["inMoisture"] = GL.GetAttribLocation(shaderProgram.ID, "inMoisture");
+            waterShader.Uniforms["projectionMatrix"] = GL.GetUniformLocation(waterShader.ID, "projectionMatrix");
+            waterShader.Uniforms["viewMatrix"] = GL.GetUniformLocation(waterShader.ID, "viewMatrix");
+            waterShader.Uniforms["modelMatrix"] = GL.GetUniformLocation(waterShader.ID, "modelMatrix");
+            waterShader.Uniforms["reflectionTexture"] = GL.GetUniformLocation(waterShader.ID, "reflectionTexture");
+            waterShader.Uniforms["refractionTexture"] = GL.GetUniformLocation(waterShader.ID, "refractionTexture");
+
+            waterShader.AttribLocation["inPosition"] = GL.GetAttribLocation(waterShader.ID, "inPosition");
+
+            guiShader.Uniforms["modelMatrix"] = GL.GetUniformLocation(guiShader.ID, "modelMatrix");
+            guiShader.Uniforms["guiTexture"] = GL.GetUniformLocation(guiShader.ID, "guiTexture");
+
+            guiShader.AttribLocation["inPosition"] = GL.GetAttribLocation(guiShader.ID, "inPosition");
+
+            terrainShader.Uniforms["modelMatrix"] = GL.GetUniformLocation(terrainShader.ID, "modelMatrix");
+            terrainShader.Uniforms["viewMatrix"] = GL.GetUniformLocation(terrainShader.ID, "viewMatrix");
+            terrainShader.Uniforms["projectionMatrix"] = GL.GetUniformLocation(terrainShader.ID, "projectionMatrix");
+            terrainShader.Uniforms["normalMatrix"] = GL.GetUniformLocation(terrainShader.ID, "normalMatrix");
+            terrainShader.Uniforms["color"] = GL.GetUniformLocation(terrainShader.ID, "color");
+            terrainShader.Uniforms["samplers[0]"] = GL.GetUniformLocation(terrainShader.ID, "samplers[0]");
+            terrainShader.Uniforms["samplers[1]"] = GL.GetUniformLocation(terrainShader.ID, "samplers[1]");
+            terrainShader.Uniforms["samplers[2]"] = GL.GetUniformLocation(terrainShader.ID, "samplers[2]");
+            terrainShader.Uniforms["samplers[3]"] = GL.GetUniformLocation(terrainShader.ID, "samplers[3]");
+            terrainShader.Uniforms["samplers[4]"] = GL.GetUniformLocation(terrainShader.ID, "samplers[4]");
+            terrainShader.Uniforms["samplers[5]"] = GL.GetUniformLocation(terrainShader.ID, "samplers[5]");
+            terrainShader.Uniforms["light.color"] = GL.GetUniformLocation(terrainShader.ID, "light.color");
+            terrainShader.Uniforms["light.direction"] = GL.GetUniformLocation(terrainShader.ID, "light.direction");
+            terrainShader.Uniforms["light.ambientIntensity"] = GL.GetUniformLocation(terrainShader.ID, "light.ambientIntensity");
+            terrainShader.Uniforms["light.specularIntensity"] = GL.GetUniformLocation(terrainShader.ID, "light.specularIntensity");
+            terrainShader.Uniforms["light.specularPower"] = GL.GetUniformLocation(terrainShader.ID, "light.specularPower");
+            terrainShader.Uniforms["eyePos"] = GL.GetUniformLocation(terrainShader.ID, "eyePos");
+            terrainShader.Uniforms["fog.color"] = GL.GetUniformLocation(terrainShader.ID, "fog.color");
+            terrainShader.Uniforms["fog.start"] = GL.GetUniformLocation(terrainShader.ID, "fog.start");
+            terrainShader.Uniforms["fog.end"] = GL.GetUniformLocation(terrainShader.ID, "fog.end");
+            terrainShader.Uniforms["fog.density"] = GL.GetUniformLocation(terrainShader.ID, "fog.density");
+            terrainShader.Uniforms["fog.type"] = GL.GetUniformLocation(terrainShader.ID, "fog.type");
+            terrainShader.Uniforms["plane"] = GL.GetUniformLocation(terrainShader.ID, "plane");
+
+            terrainShader.AttribLocation["inPosition"] = GL.GetAttribLocation(terrainShader.ID, "inPosition");
+            terrainShader.AttribLocation["inCoord"] = GL.GetAttribLocation(terrainShader.ID, "inCoord");
+            terrainShader.AttribLocation["inNormal"] = GL.GetAttribLocation(terrainShader.ID, "inNormal");
+            terrainShader.AttribLocation["inNormalizedHeight"] = GL.GetAttribLocation(terrainShader.ID, "inNormalizedHeight");
+            terrainShader.AttribLocation["inMoisture"] = GL.GetAttribLocation(terrainShader.ID, "inMoisture");
 
             terrainGenerator = new TerrainGenerator();
             camera = Camera.Instance;
             camera.scene = this;
+            fbo = new WaterFBO(ClientRectangle.Width, ClientRectangle.Height);
+            
             light = new Light(-45.0f)
             {
                 Color = new Vector3(1.0f, 1.0f, 1.0f),
@@ -115,21 +153,30 @@ namespace Generating
             darkgrass = new Texture("darkgrass.jpg");
             dirt = new Texture("dirt.jpg");
             sand = new Texture("sand.jpg");
-            //darkGrass.SetFiltering(TextureMinFilter.Linear, TextureMagFilter.Linear);
         }
         protected override void OnLoad(EventArgs e)
         {
             base.OnLoad(e);
-
             vao = new VAO();
             terrain = new VAO();
+            waterPlane = new VAO();
 
-            terrainGenerator.GenerateHeightMap(W, H, topLeft, bottomLeft, bottomRight, topRight, roughness, min, max);
+            terrainGenerator.GenerateHeightMap(terrain, W, H, topLeft, bottomLeft, bottomRight, topRight, roughness, min, max);
             terrainGenerator.NormalizeHeightMap(terrain);
-                
+            HorizontalPlaneReflection = new Vector4(0.0f, -1.0f, 0.0f, terrain.WaterHeight);
+            HorizontalPlaneRefraction = new Vector4(0.0f, 1.0f, 0.0f, terrain.WaterHeight);
+            HorizontalPlaneWorld = new Vector4(0.0f, -1.0f, 0.0f, 100000);
 
+            myTriangle = new Vector3[W * H];
+            for (int i = 0; i < W; i++)
+                for (int j = 0; j < H; j++)
+                    myTriangle[i * W + j] = new Vector3(j * zoom, terrain.WaterHeight, i * zoom);
+
+            waterPlane.BindVerticesBuffer(myTriangle);
+            
+            guiReflect = new Gui(fbo.ReflectionTexture, new Vector3(-0.7f, 0.5f, 0.0f), new Vector3(0.25f, 0.25f, 0.0f));
+            guiRefract = new Gui(fbo.RefractionTexture, new Vector3(0.7f, 0.5f, 0.0f), new Vector3(0.25f, 0.25f, 0.0f));
             GL.ClearColor(0.1f, 0.2f, 0.5f, 0.0f);
-            GL.Enable(EnableCap.DepthTest);
         }
 
         protected override void OnResize(EventArgs e)
@@ -138,6 +185,7 @@ namespace Generating
 
             GL.Viewport(ClientRectangle.X, ClientRectangle.Y, ClientRectangle.Width, ClientRectangle.Height);
             camera.OnResize(Width, Height);
+            fbo.OnResize(Width, Height);
         }
 
         protected override void OnUpdateFrame(FrameEventArgs e)
@@ -185,14 +233,34 @@ namespace Generating
         protected override void OnRenderFrame(FrameEventArgs e)
         {
             base.OnRenderFrame(e);
-           
-            GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
             //testDraw();
-            
-            
-            RenderMesh();
+            GL.Enable(EnableCap.DepthTest);
+            //GL.DepthFunc(DepthFunction.Always);
+            //RenderMesh();
+            fbo.BindReflectionFrameBuffer();
+            GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+            float distance = 2*(camera.Eye.Y - terrain.WaterHeight);
+            camera.Eye.Y -= distance;
+            camera.Pitch = -camera.Pitch;
+            camera.Update();
+            GL.Uniform4(terrainShader.Uniforms["plane"], HorizontalPlaneReflection);
+
+            RenderTexturedHeightMap();
+            fbo.BindRefractionFrameBuffer();
+            GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+            camera.Eye.Y += distance;
+            camera.Pitch = -camera.Pitch;
+            camera.Update();
+            GL.Uniform4(terrainShader.Uniforms["plane"], HorizontalPlaneRefraction);
             RenderTexturedHeightMap();
 
+            fbo.UnbindFrameBuffer();
+            GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+            GL.Uniform4(terrainShader.Uniforms["plane"], HorizontalPlaneWorld);
+            RenderTexturedHeightMap();
+            RenderWater();
+            RenderGui(guiReflect);
+            RenderGui(guiRefract);
             SwapBuffers();
             
             isEdited = false;
@@ -224,36 +292,62 @@ namespace Generating
             GL.Disable(EnableCap.VertexArray);
             GL.Disable(EnableCap.PrimitiveRestart);
         }
-        
+        private void RenderGui(Gui gui)
+        {
+            guiShader.Start();
+            GL.Enable(EnableCap.Texture2D);
+            //GL.Disable(EnableCap.DepthTest);
+            GL.BindVertexArray(gui.Vao.ID);
+            GL.BindBuffer(BufferTarget.ArrayBuffer, gui.Vao.VerticesBuffer);
+            GL.EnableVertexAttribArray(guiShader.AttribLocation["inPosition"]);
+            GL.VertexAttribPointer(guiShader.AttribLocation["inPosition"], 3, VertexAttribPointerType.Float, false, 0, 0);
+
+            GL.ActiveTexture(TextureUnit.Texture0);
+            GL.BindTexture(TextureTarget.Texture2D, gui.TextureID);
+
+            GL.Uniform1(guiShader.Uniforms["guiTexture"], 0);
+            GL.UniformMatrix4(guiShader.Uniforms["modelMatrix"], false, ref gui.ModelMatrix);
+
+            GL.DrawArrays(BeginMode.TriangleStrip, 0, 4);
+
+            guiShader.Stop();
+            GL.Disable(EnableCap.Texture2D);
+            //GL.Enable(EnableCap.DepthTest);
+            GL.BindVertexArray(0);
+            GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
+            GL.BindTexture(TextureTarget.Texture2D, 0);
+        }
         private void RenderTexturedHeightMap()
         {
-            if (!isInit && renderMode == RenderMode.Textured)
+            //if (!isInit && renderMode == RenderMode.Textured)
             {
-                terrainGenerator.CreateMesh(zoom, terrain);
+                if (!isInit)
+                    terrainGenerator.CreateMesh(zoom, terrain);
 
+                terrainShader.Start();
                 GL.BindVertexArray(terrain.ID);
 
                 GL.BindBuffer(BufferTarget.ArrayBuffer, terrain.VerticesBuffer);
-                GL.EnableVertexAttribArray(shaderProgram.AttribLocation["inPosition"]);
-                GL.VertexAttribPointer(shaderProgram.AttribLocation["inPosition"], 3, VertexAttribPointerType.Float, false, 0, 0);
+                GL.EnableVertexAttribArray(terrainShader.AttribLocation["inPosition"]);
+                GL.VertexAttribPointer(terrainShader.AttribLocation["inPosition"], 3, VertexAttribPointerType.Float, false, 0, 0);
 
                 GL.BindBuffer(BufferTarget.ArrayBuffer, terrain.TexCoordsBuffer);
-                GL.EnableVertexAttribArray(shaderProgram.AttribLocation["inCoord"]);
-                GL.VertexAttribPointer(shaderProgram.AttribLocation["inCoord"], 2, VertexAttribPointerType.Float, false, 0, 0);
+                GL.EnableVertexAttribArray(terrainShader.AttribLocation["inCoord"]);
+                GL.VertexAttribPointer(terrainShader.AttribLocation["inCoord"], 2, VertexAttribPointerType.Float, false, 0, 0);
 
                 GL.BindBuffer(BufferTarget.ElementArrayBuffer, terrain.IndicesBuffer);
 
                 GL.BindBuffer(BufferTarget.ArrayBuffer, terrain.NormalsBuffer);
-                GL.EnableVertexAttribArray(shaderProgram.AttribLocation["inNormal"]);
-                GL.VertexAttribPointer(shaderProgram.AttribLocation["inNormal"], 3, VertexAttribPointerType.Float, false, 0, 0);
+                GL.EnableVertexAttribArray(terrainShader.AttribLocation["inNormal"]);
+                GL.VertexAttribPointer(terrainShader.AttribLocation["inNormal"], 3, VertexAttribPointerType.Float, false, 0, 0);
 
                 GL.BindBuffer(BufferTarget.ArrayBuffer, terrain.NormalizedHeightsBuffer);
-                GL.EnableVertexAttribArray(shaderProgram.AttribLocation["inNormalizedHeight"]);
-                GL.VertexAttribPointer(shaderProgram.AttribLocation["inNormalizedHeight"], 1, VertexAttribPointerType.Float, false, 0, 0);
+                GL.EnableVertexAttribArray(terrainShader.AttribLocation["inNormalizedHeight"]);
+                GL.VertexAttribPointer(terrainShader.AttribLocation["inNormalizedHeight"], 1, VertexAttribPointerType.Float, false, 0, 0);
 
                 GL.BindBuffer(BufferTarget.ArrayBuffer, terrain.MoisturesBuffer);
-                GL.EnableVertexAttribArray(shaderProgram.AttribLocation["inMoisture"]);
-                GL.VertexAttribPointer(shaderProgram.AttribLocation["inMoisture"], 1, VertexAttribPointerType.Float, false, 0, 0);
+                GL.EnableVertexAttribArray(terrainShader.AttribLocation["inMoisture"]);
+                GL.VertexAttribPointer(terrainShader.AttribLocation["inMoisture"], 1, VertexAttribPointerType.Float, false, 0, 0);
 
                 GL.ActiveTexture(TextureUnit.Texture0);
                 GL.BindTexture(TextureTarget.Texture2D, rock.ID);
@@ -269,17 +363,16 @@ namespace Generating
 
                 GL.ActiveTexture(TextureUnit.Texture3);
                 GL.BindTexture(TextureTarget.Texture2D, dirt.ID);
-                GL.BindSampler((int)TextureUnit.Texture2, dirt.SamplerID);
+                GL.BindSampler((int)TextureUnit.Texture3, dirt.SamplerID);
 
                 GL.ActiveTexture(TextureUnit.Texture4);
                 GL.BindTexture(TextureTarget.Texture2D, sand.ID);
-                GL.BindSampler((int)TextureUnit.Texture2, sand.SamplerID);
+                GL.BindSampler((int)TextureUnit.Texture4, sand.SamplerID);
 
                 GL.ActiveTexture(TextureUnit.Texture5);
                 GL.BindTexture(TextureTarget.Texture2D, darkgrass.ID);
-                GL.BindSampler((int)TextureUnit.Texture2, darkgrass.SamplerID);
+                GL.BindSampler((int)TextureUnit.Texture5, darkgrass.SamplerID);
 
-                shaderProgram.Start();
                 
                 isInit = true;
             }
@@ -287,37 +380,66 @@ namespace Generating
             GL.Enable(EnableCap.Texture2D);
             GL.Enable(EnableCap.PrimitiveRestart);
             GL.Enable(EnableCap.CullFace);
-            GL.PolygonMode(MaterialFace.Front, PolygonMode.Fill);
+            GL.Enable(EnableCap.ClipPlane0);
             GL.PrimitiveRestartIndex(terrain.IndicesCount);
 
 
-            GL.UniformMatrix4(shaderProgram.Uniforms["projectionMatrix"], false, ref camera.Projection);
-            GL.UniformMatrix4(shaderProgram.Uniforms["modelMatrix"], false, ref model);
-            GL.UniformMatrix4(shaderProgram.Uniforms["viewMatrix"], false, ref camera.ModelView);
-            GL.UniformMatrix4(shaderProgram.Uniforms["normalMatrix"], false, ref camera.Normal);
-            GL.Uniform3(shaderProgram.Uniforms["eyePos"], ref camera.Eye);
-            GL.Uniform1(shaderProgram.Uniforms["samplers[0]"], (int)TextureUnit.Texture0);
-            GL.Uniform1(shaderProgram.Uniforms["samplers[1]"], 1);
-            GL.Uniform1(shaderProgram.Uniforms["samplers[2]"], 2);
-            GL.Uniform1(shaderProgram.Uniforms["samplers[3]"], 3);
-            GL.Uniform1(shaderProgram.Uniforms["samplers[4]"], 4);
-            GL.Uniform1(shaderProgram.Uniforms["samplers[5]"], 5);
-            GL.Uniform4(shaderProgram.Uniforms["color"], new Vector4(1.0f, 1.0f, 1.0f, 1.0f));
-            GL.Uniform3(shaderProgram.Uniforms["light.color"], ref light.Color);
-            GL.Uniform3(shaderProgram.Uniforms["light.direction"], ref light.Direction);
-            GL.Uniform1(shaderProgram.Uniforms["light.ambientIntensity"], light.AmbientIntensity);
-            GL.Uniform1(shaderProgram.Uniforms["light.specularIntensity"], specularIntensity);
-            GL.Uniform1(shaderProgram.Uniforms["light.specularPower"], specularPower);
-            GL.Uniform4(shaderProgram.Uniforms["fog.color"], ref FogColor);
-            GL.Uniform1(shaderProgram.Uniforms["fog.density"], 0.001f);
-            GL.Uniform1(shaderProgram.Uniforms["fog.start"], 30.0f);
-            GL.Uniform1(shaderProgram.Uniforms["fog.end"], 100.0f);
-            GL.Uniform1(shaderProgram.Uniforms["fog.type"], 2);
+            GL.UniformMatrix4(terrainShader.Uniforms["projectionMatrix"], false, ref camera.Projection);
+            GL.UniformMatrix4(terrainShader.Uniforms["modelMatrix"], false, ref model);
+            GL.UniformMatrix4(terrainShader.Uniforms["viewMatrix"], false, ref camera.ModelView);
+            GL.UniformMatrix4(terrainShader.Uniforms["normalMatrix"], false, ref camera.Normal);
+            GL.Uniform3(terrainShader.Uniforms["eyePos"], ref camera.Eye);
+            GL.Uniform1(terrainShader.Uniforms["samplers[0]"], (int)TextureUnit.Texture0);
+            GL.Uniform1(terrainShader.Uniforms["samplers[1]"], 1);
+            GL.Uniform1(terrainShader.Uniforms["samplers[2]"], 2);
+            GL.Uniform1(terrainShader.Uniforms["samplers[3]"], 3);
+            GL.Uniform1(terrainShader.Uniforms["samplers[4]"], 4);
+            GL.Uniform1(terrainShader.Uniforms["samplers[5]"], 5);
+            GL.Uniform4(terrainShader.Uniforms["color"], new Vector4(1.0f, 1.0f, 1.0f, 1.0f));
+            GL.Uniform3(terrainShader.Uniforms["light.color"], ref light.Color);
+            GL.Uniform3(terrainShader.Uniforms["light.direction"], ref light.Direction);
+            GL.Uniform1(terrainShader.Uniforms["light.ambientIntensity"], light.AmbientIntensity);
+            GL.Uniform1(terrainShader.Uniforms["light.specularIntensity"], specularIntensity);
+            GL.Uniform1(terrainShader.Uniforms["light.specularPower"], specularPower);
+            GL.Uniform4(terrainShader.Uniforms["fog.color"], ref FogColor);
+            GL.Uniform1(terrainShader.Uniforms["fog.density"], 0.001f);
+            GL.Uniform1(terrainShader.Uniforms["fog.start"], 30.0f);
+            GL.Uniform1(terrainShader.Uniforms["fog.end"], 100.0f);
+            GL.Uniform1(terrainShader.Uniforms["fog.type"], 2);
 
             GL.DrawElements(BeginMode.TriangleStrip, terrain.IndicesCount, DrawElementsType.UnsignedInt, 0);
-
+            //terrainShader.Stop();
             GL.Disable(EnableCap.PrimitiveRestart);
             GL.Disable(EnableCap.Texture2D);
+        }
+        private void RenderWater()
+        {
+            waterShader.Start();
+            GL.Enable(EnableCap.Texture2D);
+            GL.Enable(EnableCap.PrimitiveRestart);
+            GL.PrimitiveRestartIndex(terrain.IndicesCount);
+
+            GL.ActiveTexture(TextureUnit.Texture0);
+            GL.BindTexture(TextureTarget.Texture2D, fbo.ReflectionTexture);
+            GL.BindSampler((int)TextureUnit.Texture0, fbo.ReflectionSampler);
+
+            GL.ActiveTexture(TextureUnit.Texture1);
+            GL.BindTexture(TextureTarget.Texture2D, fbo.RefractionTexture);
+            GL.BindSampler((int)TextureUnit.Texture1, fbo.RefractionSampler);
+
+            GL.UniformMatrix4(waterShader.Uniforms["projectionMatrix"], false, ref camera.Projection);
+            GL.UniformMatrix4(waterShader.Uniforms["modelMatrix"], false, ref model);
+            GL.UniformMatrix4(waterShader.Uniforms["viewMatrix"], false, ref camera.ModelView);
+            GL.Uniform1(waterShader.Uniforms["reflectionTexture"], 0);
+            GL.Uniform1(waterShader.Uniforms["refractionTexture"], 1);
+
+            GL.BindBuffer(BufferTarget.ArrayBuffer, waterPlane.VerticesBuffer);
+            GL.EnableVertexAttribArray(terrainShader.AttribLocation["inPosition"]);
+            GL.VertexAttribPointer(terrainShader.AttribLocation["inPosition"], 3, VertexAttribPointerType.Float, false, 0, 0);
+            GL.BindBuffer(BufferTarget.ElementArrayBuffer, terrain.IndicesBuffer);
+            GL.DrawElements(BeginMode.TriangleStrip, terrain.IndicesCount, DrawElementsType.UnsignedInt, 0);
+            waterShader.Stop();
+
         }
         private void testDraw()
         {
@@ -336,18 +458,7 @@ namespace Generating
             GL.Disable(EnableCap.VertexArray);
         }
         VAO vao;
-        Vector3[] myTriangle = new Vector3[]
-             {
-            new Vector3(0f, 0f, 0f), //0
-            new Vector3(0f, 1f, 0f), //1
-            new Vector3(1f, 0f, 0f), //2
-            new Vector3(1f, 1f, 0f), //3
-            new Vector3(2f, 0f, 0f), //4
-            new Vector3(2f, 1f, 0f), //5
-            new Vector3(0f, 2f, 0f), //6
-            new Vector3(1f, 2f, 0f), //7
-            new Vector3(2f, 2f, 0f) //8
-             };
+        Vector3[] myTriangle;
         uint[] indices = new uint[]
         {
             0, 1, 2, 3, 4, 5, 10, 1, 6, 3, 7, 5, 8

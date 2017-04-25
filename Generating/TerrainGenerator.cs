@@ -32,13 +32,13 @@ namespace Generating
         public float[,] MoistureMap { get; private set; }
         private static Random rand = new Random();
 
-        public void GenerateHeightMap(int width, int height, float topLeft, float bottomLeft, float bottomRight, float topRight, float roughness, float min, float max)
+        public void GenerateHeightMap(VAO terrain, int width, int height, float topLeft, float bottomLeft, float bottomRight, float topRight, float roughness, float min, float max)
         {
             Width = width;
             Height = height;
             Roughness = roughness;
-            Min = min;
-            Max = max;
+            this.Min = min;
+            this.Max = max;
             Noise noise = new Noise();
             noise.Reseed();
             HeightMap = new float[Width, Height]; float ma = float.MinValue; float mi = float.MaxValue;
@@ -65,23 +65,20 @@ namespace Generating
                 {
                     //круг
                     float distanceToIsland = (float)Math.Sqrt(Math.Pow(i - islandRadius, 2) + Math.Pow(j - islandRadius, 2));
-                    //float distanceToCenter = (float)Math.Sqrt(Math.Pow(i - center.X, 2) + Math.Pow(j - center.Y, 2));
-                    float maxWidth = islandRadius - 10.0f;
+                    float distanceToCenter = (float)Math.Sqrt(Math.Pow(i - center.X, 2) + Math.Pow(j - center.Y, 2));
+                    float maxWidth = islandRadius;
                     float delta = distanceToIsland / maxWidth;
                     float influence = delta * delta;
-                    influence = influence > 1.0f ? 0.0f : 1.0f - influence;
-                    //float jungleInfluence = 1 * (float)Math.Log((islandRadius - distanceToCenter) / islandRadius + 1);
+                    influence = influence > 1f ? 0f : 1.0f - influence;
                     NormalizedHeightMap[i, j] *= influence;
                     HeightMap[i, j] *= influence;
 
                     //квадрат
-                    //float distanceToIsland = (float)Math.Max(i - islandRadius, j - islandRadius);
-                    ////float distanceToCenter = (float)Math.Sqrt(Math.Pow(i - center.X, 2) + Math.Pow(j - center.Y, 2));
-                    //float maxWidth = islandRadius - 10f;
+                    //float distanceToIsland = (float)Math.Max(Math.Abs(i - islandRadius), Math.Abs(j - islandRadius));
+                    //float maxWidth = islandRadius - 10;
                     //float delta = distanceToIsland / maxWidth;
                     //float influence = delta * delta;
                     //influence = influence > 1.0f ? 0.0f : 1.0f - influence;
-                    ////float jungleInfluence = 1.0f * (float)Math.Log((islandRadius - distanceToCenter) / islandRadius + 1);
                     //NormalizedHeightMap[i, j] *= influence;
                     //HeightMap[i, j] *= influence;
 
@@ -96,6 +93,17 @@ namespace Generating
                     MoistureMap[i, j] *= (NormalizedHeightMap[i, j]) == 0.0f? 0.0f : (1.0f - NormalizedHeightMap[i, j]);
                 }
             save("MoistureMap.jpg", MoistureMap, new Color4(1.0f, 0.0f, 0.0f, 1.0f));
+            float Max = float.MinValue;
+            float Min = float.MaxValue;
+            for (int i = 0; i < Width; i++)
+                for (int j = 0; j < Height; j++)
+                {
+                    if (HeightMap[i, j] > Max)
+                        Max = HeightMap[i, j];
+                    if (HeightMap[i, j] < Min)
+                        Min = HeightMap[i, j];
+                }
+            terrain.WaterHeight = 0.13f * (Max - Min) + Min;
         }
         void save(string name, float[,] array, Color4 c)
         {

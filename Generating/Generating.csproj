@@ -53,6 +53,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="GUI\Gui.cs" />
+    <Compile Include="GUI\GuiTexture.cs" />
+    <Compile Include="WaterFBO.cs" />
     <Compile Include="Light.cs" />
     <Compile Include="Noise.cs" />
     <Compile Include="Shaders\Shader.cs" />
@@ -85,6 +88,10 @@
     <EmbeddedResource Include="Shaders\mainShader.frag" />
     <EmbeddedResource Include="Shaders\shader.vert" />
     <EmbeddedResource Include="Shaders\fogShader.vert" />
+    <EmbeddedResource Include="Shaders\water.frag" />
+    <EmbeddedResource Include="Shaders\water.vert" />
+    <EmbeddedResource Include="Shaders\gui.frag" />
+    <EmbeddedResource Include="Shaders\gui.vert" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

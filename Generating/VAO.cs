@@ -18,6 +18,7 @@ namespace Generating
         public int ColorsBuffer { get; private set; } = -1;
         public int NormalizedHeightsBuffer { get; private set; } = -1;
         public int MoisturesBuffer { get; private set; } = -1;
+        public float WaterHeight;
 
         public int IndicesCount;
 

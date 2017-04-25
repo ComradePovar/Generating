@@ -11,8 +11,8 @@ namespace Generating
         public Vector3 Eye;
         private Vector3 target;
         private Vector3 upVector;
-        private float facing;
-        private float pitch;
+        public float Facing { get; set; }
+        public float Pitch { get; set; }
         private int prevMouseX;
         private int prevMouseY;
         internal Game scene { get; set; }
@@ -64,33 +64,33 @@ namespace Generating
         {
             if (mouse.X < prevMouseX)
             {
-                facing += RotationSpeed * (prevMouseX - mouse.X);
+                Facing += RotationSpeed * (prevMouseX - mouse.X);
                 prevMouseX = mouse.X;
             }
             else if (mouse.X > prevMouseX)
             {
-                facing -= RotationSpeed * (mouse.X - prevMouseX);
+                Facing -= RotationSpeed * (mouse.X - prevMouseX);
                 prevMouseX = mouse.X;
             }
-            if (mouse.Y > prevMouseY && pitch >= -MathHelper.PiOver2)
+            if (mouse.Y > prevMouseY && Pitch >= -MathHelper.PiOver2)
             {
-                pitch -= RotationSpeed * (mouse.Y - prevMouseY);
+                Pitch -= RotationSpeed * (mouse.Y - prevMouseY);
                 prevMouseY = mouse.Y;
             }
-            else if (mouse.Y < prevMouseY && pitch <= MathHelper.PiOver2)
+            else if (mouse.Y < prevMouseY && Pitch <= MathHelper.PiOver2)
             {
-                pitch += RotationSpeed * (prevMouseY - mouse.Y);
+                Pitch += RotationSpeed * (prevMouseY - mouse.Y);
                 prevMouseY = mouse.Y;
             }
             
             if (keyboard[Key.W])
-                Translate(MovementSpeed * (float)Math.Sin(facing), 0, MovementSpeed * (float)Math.Cos(facing));
+                Translate(MovementSpeed * (float)Math.Sin(Facing), 0, MovementSpeed * (float)Math.Cos(Facing));
             if (keyboard[Key.S])
-                Translate(-MovementSpeed * (float)Math.Sin(facing), 0, -MovementSpeed * (float)Math.Cos(facing));
+                Translate(-MovementSpeed * (float)Math.Sin(Facing), 0, -MovementSpeed * (float)Math.Cos(Facing));
             if (keyboard[Key.A])
-                Translate(MovementSpeed * (float)Math.Sin(facing + MathHelper.PiOver2), 0, MovementSpeed * (float)Math.Cos(facing + MathHelper.PiOver2));
+                Translate(MovementSpeed * (float)Math.Sin(Facing + MathHelper.PiOver2), 0, MovementSpeed * (float)Math.Cos(Facing + MathHelper.PiOver2));
             if (keyboard[Key.D])
-                Translate(-MovementSpeed * (float)Math.Sin(facing + MathHelper.PiOver2), 0, -MovementSpeed * (float)Math.Cos(facing + MathHelper.PiOver2));
+                Translate(-MovementSpeed * (float)Math.Sin(Facing + MathHelper.PiOver2), 0, -MovementSpeed * (float)Math.Cos(Facing + MathHelper.PiOver2));
             if (keyboard[Key.KeypadPlus])
             {
                 scene.specularPower++;
@@ -115,10 +115,15 @@ namespace Generating
                 Translate(0, MovementSpeed, 0);
             if (keyboard[Key.LControl])
                 Translate(0, -MovementSpeed, 0);
+            Update();
+        }
+        public void Update()
+        {
 
-            ModelView = Matrix4.LookAt(Eye, Eye + new Vector3((float)Math.Sin(facing), (float)Math.Sin(pitch), (float)Math.Cos(facing)),
+            ModelView = Matrix4.LookAt(Eye, Eye + new Vector3((float)Math.Sin(Facing), (float)Math.Sin(Pitch), (float)Math.Cos(Facing)),
                                                upVector);
             Normal = Matrix4.Transpose(Matrix4.Invert(ModelView));
+
         }
     }
 }

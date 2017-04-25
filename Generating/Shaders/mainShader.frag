@@ -80,7 +80,7 @@ void main()
 
 	float height = normalizedHeight;
     if (height <= waterUpperBound) {
-        outputColor = texture2D(samplers[1], texCoord);
+        outputColor = sand;
 	}
 	else if (height <= sandLowerBound) {
 		if (moisture <= moistureLevel1) {
