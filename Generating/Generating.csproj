@@ -53,14 +53,17 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Textures\CubeMapTexture.cs" />
     <Compile Include="GUI\Gui.cs" />
     <Compile Include="GUI\GuiTexture.cs" />
+    <Compile Include="Skybox.cs" />
+    <Compile Include="Textures\Texture.cs" />
     <Compile Include="WaterFBO.cs" />
     <Compile Include="Light.cs" />
     <Compile Include="Noise.cs" />
     <Compile Include="Shaders\Shader.cs" />
     <Compile Include="Shaders\ShaderProgram.cs" />
-    <Compile Include="Texture.cs" />
+    <Compile Include="Textures\Texture2D.cs" />
     <Compile Include="Camera.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -92,6 +95,8 @@
     <EmbeddedResource Include="Shaders\water.vert" />
     <EmbeddedResource Include="Shaders\gui.frag" />
     <EmbeddedResource Include="Shaders\gui.vert" />
+    <EmbeddedResource Include="Shaders\skybox.frag" />
+    <EmbeddedResource Include="Shaders\skybox.vert" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
@@ -115,6 +120,17 @@
   <ItemGroup>
     <EmbeddedResource Include="Assets\darkgrass.jpg" />
     <EmbeddedResource Include="Assets\sand.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Assets\dudvMap.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Assets\Skybox\back.jpg" />
+    <EmbeddedResource Include="Assets\Skybox\bottom.jpg" />
+    <EmbeddedResource Include="Assets\Skybox\front.jpg" />
+    <EmbeddedResource Include="Assets\Skybox\left.jpg" />
+    <EmbeddedResource Include="Assets\Skybox\right.jpg" />
+    <EmbeddedResource Include="Assets\Skybox\top.jpg" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

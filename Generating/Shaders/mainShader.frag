@@ -80,21 +80,21 @@ void main()
 
 	float height = normalizedHeight;
     if (height <= waterUpperBound) {
-        outputColor = sand;
+        float waterInfluence = (waterUpperBound - height) / (waterUpperBound);
+		outputColor = water * waterInfluence + sand * (1.0 - waterInfluence);
 	}
 	else if (height <= sandLowerBound) {
 		if (moisture <= moistureLevel1) {
-			float darkgrassInfluence = (height - waterUpperBound) / (sandLowerBound - waterUpperBound);
-			outputColor = darkgrass * darkgrassInfluence + water * (1.0 - darkgrassInfluence);
+			float sandInfluence = (sandLowerBound - height) / (sandLowerBound - waterUpperBound);
+			outputColor = sand * sandInfluence + darkgrass * (1.0 - sandInfluence);
 		} else if (moisture <= moistureLevel2) {
 			float sandInfluence = (moisture - moistureLevel1) / (moistureLevel2 - moistureLevel1);
-			float heightInfluence = (height - waterUpperBound) / (sandLowerBound - waterUpperBound);
+			float heightInfluence = (sandLowerBound - height) / (sandLowerBound - waterUpperBound);
 			outputColor = sand * sandInfluence + darkgrass * (1.0 - sandInfluence);
-			outputColor = outputColor * heightInfluence + water *  (1.0 - heightInfluence);
+			outputColor = outputColor * (1.0 - heightInfluence) + sand * heightInfluence;
 		}
 		else{
-			float sandInfluence = (height - waterUpperBound) / (sandLowerBound - waterUpperBound);
-			outputColor = sand * sandInfluence + water * (1.0 - sandInfluence);
+			outputColor = sand;
 		}
     } else if (height <= sandUpperBound) {
 		if (moisture <= moistureLevel1) {

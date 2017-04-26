@@ -20,7 +20,8 @@ namespace Generating
         public int MoisturesBuffer { get; private set; } = -1;
         public float WaterHeight;
 
-        public int IndicesCount;
+        public int IndicesCount { get; private set; }
+        public int VerticesCount { get; private set; }
 
         public VAO()
         {
@@ -44,6 +45,7 @@ namespace Generating
             GL.BindBuffer(BufferTarget.ArrayBuffer, VerticesBuffer);
             GL.BufferData(BufferTarget.ArrayBuffer, (IntPtr)(vertices.Length * Vector3.SizeInBytes), vertices, BufferUsageHint.StaticDraw);
             GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
+            VerticesCount = vertices.Length;
         }
 
         public void BindIndicesBuffer(uint[] indices)

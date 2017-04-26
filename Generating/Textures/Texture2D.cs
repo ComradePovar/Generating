@@ -10,33 +10,23 @@ using System.Reflection;
 using OpenTK;
 using OpenTK.Graphics.OpenGL;
 
-namespace Generating
+namespace Generating.Textures
 {
-    class Texture
+    class Texture2D : Texture
     {
-        public int ID { get; set; }
-        public int SamplerID { get; set; }
-        public int Width { get; set; }
-        public int Height { get; set; }
-        public TextureMinFilter MinFilter { get; private set; }
-        public TextureMagFilter MagFilter { get; private set; }
-
-        public Bitmap bitmap;
-        
-        
-        public Texture(string textureName)
+        public Texture2D(string textureName) : base(textureName)
         {
-            LoadTexture(textureName);
+
         }
 
-        private void LoadTexture(string textureName)
+        public override void LoadTexture(string textureName)
         {
             GL.Hint(HintTarget.PerspectiveCorrectionHint, HintMode.Nicest);
             ID = GL.GenTexture();
             SamplerID = GL.GenSampler();
             GL.BindTexture(TextureTarget.Texture2D, ID);
 
-            bitmap = new Bitmap(Assembly.GetExecutingAssembly().GetManifestResourceStream("Generating.Assets." + textureName));
+            Bitmap bitmap = new Bitmap(Assembly.GetExecutingAssembly().GetManifestResourceStream("Generating.Assets." + textureName));
             BitmapData data = bitmap.LockBits(new Rectangle(0, 0, bitmap.Width, bitmap.Height), ImageLockMode.ReadOnly,
                 System.Drawing.Imaging.PixelFormat.Format32bppArgb);
 
@@ -55,20 +45,9 @@ namespace Generating
                 TextureMagFilter.Linear);
             GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, data.Width, data.Height, 0,
                 OpenTK.Graphics.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte, data.Scan0);
-
-            //GL.Viewport(0, 0, data.Width, data.Height);
             
             bitmap.UnlockBits(data);
             GL.BindTexture(TextureTarget.Texture2D, 0);
-        }
-
-        private void SetFiltering(TextureMinFilter min, TextureMagFilter mag)
-        {
-            //TODO: doesn't works
-            GL.SamplerParameter(SamplerID, SamplerParameter.TextureMagFilter, (int)mag);
-            GL.SamplerParameter(SamplerID, SamplerParameter.TextureMinFilter, (int)min);
-            this.MinFilter = min;
-            this.MagFilter = mag;
         }
     }
 }

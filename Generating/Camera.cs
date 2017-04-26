@@ -48,7 +48,7 @@ namespace Generating
 
         public void OnResize(int width, int height)
         {
-            Projection = Matrix4.CreatePerspectiveFieldOfView((float)Math.PI / 4f, width / (float)height, 1.0f, 1500.0f);
+            Projection = Matrix4.CreatePerspectiveFieldOfView((float)Math.PI / 4f, width / (float)height, 1.0f, 10000.0f);
             GL.MatrixMode(MatrixMode.Projection);
             GL.LoadMatrix(ref Projection);
         }
@@ -93,23 +93,33 @@ namespace Generating
                 Translate(-MovementSpeed * (float)Math.Sin(Facing + MathHelper.PiOver2), 0, -MovementSpeed * (float)Math.Cos(Facing + MathHelper.PiOver2));
             if (keyboard[Key.KeypadPlus])
             {
-                scene.specularPower++;
-                Console.WriteLine(scene.specularPower);
+                scene.tiling += 0.1f;
+                Console.WriteLine("tiling "+scene.tiling);
             }
             if (keyboard[Key.KeypadMinus])
             {
-                scene.specularPower--;
-                Console.WriteLine(scene.specularPower);
+                scene.tiling -= 0.1f;
+                Console.WriteLine("tiling "+scene.tiling);
             }
             if (keyboard[Key.Plus])
             {
-                scene.specularIntensity++;
-                Console.WriteLine(scene.specularIntensity);
+                scene.wave += 0.0005f;
+                Console.WriteLine("wave " + scene.wave);
             }
             if (keyboard[Key.Minus])
             {
-                scene.specularIntensity--;
-                Console.WriteLine(scene.specularIntensity);
+                scene.wave -= 0.0005f;
+                Console.WriteLine("wave " + scene.wave);
+            }
+            if (keyboard[Key.K])
+            {
+                scene.waterSpeed += 0.001f;
+                Console.WriteLine("time " + scene.waterSpeed);
+            }
+            if (keyboard[Key.L])
+            {
+                scene.waterSpeed -= 0.001f;
+                Console.WriteLine("time " + scene.waterSpeed);
             }
             if (keyboard[Key.LShift])
                 Translate(0, MovementSpeed, 0);

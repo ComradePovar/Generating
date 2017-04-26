@@ -6,6 +6,7 @@ using OpenTK.Graphics.OpenGL;
 using System.Drawing;
 using Generating.Shaders;
 using Generating.GUI;
+using Generating.Textures;
 
 
 /* TODO:
@@ -32,7 +33,7 @@ namespace Generating
         float zoom = 1f;
         private float min = 0;
         private float max = 10;
-        private float roughness = 20f;
+        private float roughness = 18f;
         private float topLeft = 0;
         private float bottomLeft = 0;
         private float bottomRight = 0;
@@ -40,19 +41,24 @@ namespace Generating
         private RenderMode renderMode = RenderMode.Textured;
         private VAO terrain;
         private VAO waterPlane;
+        private Skybox skybox;
         private ShaderProgram terrainShader;
         private ShaderProgram waterShader;
         private ShaderProgram guiShader;
         private Light light;
         public float specularIntensity = 1;
         public float specularPower = 2;
+        public float wave = 0.02f;
+        public float tiling = 1;
+        public float waterSpeed = 0.0003f;
+        public float time = 0;
 
-        Texture water;
-        Texture rock;
-        Texture mossyrock;
-        Texture dirt;
-        Texture sand;
-        Texture darkgrass;
+        Texture2D water;
+        Texture2D rock;
+        Texture2D mossyrock;
+        Texture2D dirt;
+        Texture2D sand;
+        Texture2D darkgrass;
         Vector4 FogColor;
         Vector4 HorizontalPlaneReflection;
         Vector4 HorizontalPlaneRefraction;
@@ -96,6 +102,10 @@ namespace Generating
             waterShader.Uniforms["modelMatrix"] = GL.GetUniformLocation(waterShader.ID, "modelMatrix");
             waterShader.Uniforms["reflectionTexture"] = GL.GetUniformLocation(waterShader.ID, "reflectionTexture");
             waterShader.Uniforms["refractionTexture"] = GL.GetUniformLocation(waterShader.ID, "refractionTexture");
+            waterShader.Uniforms["dudvMapTexture"] = GL.GetUniformLocation(waterShader.ID, "dudvMapTexture");
+            waterShader.Uniforms["waveStrength"] = GL.GetUniformLocation(waterShader.ID, "waveStrength");
+            waterShader.Uniforms["tiling"] = GL.GetUniformLocation(waterShader.ID, "tiling");
+            waterShader.Uniforms["time"] = GL.GetUniformLocation(waterShader.ID, "time");
 
             waterShader.AttribLocation["inPosition"] = GL.GetAttribLocation(waterShader.ID, "inPosition");
 
@@ -147,12 +157,12 @@ namespace Generating
                 SpecularPower = 10
             };
             FogColor = new Vector4(0.5f, 0.5f, 0.5f, 1.0f);
-            rock = new Texture("rock.jpg");
-            mossyrock = new Texture("mossyrock.jpg");
-            water = new Texture("water.jpg");//grass2.jpg || water.jpg
-            darkgrass = new Texture("darkgrass.jpg");
-            dirt = new Texture("dirt.jpg");
-            sand = new Texture("sand.jpg");
+            rock = new Texture2D("rock.jpg");
+            mossyrock = new Texture2D("mossyrock.jpg");
+            water = new Texture2D("water.jpg");//grass2.jpg || water.jpg
+            darkgrass = new Texture2D("darkgrass.jpg");
+            dirt = new Texture2D("dirt.jpg");
+            sand = new Texture2D("sand.jpg");
         }
         protected override void OnLoad(EventArgs e)
         {
@@ -160,6 +170,7 @@ namespace Generating
             vao = new VAO();
             terrain = new VAO();
             waterPlane = new VAO();
+            skybox = new Skybox(W);
 
             terrainGenerator.GenerateHeightMap(terrain, W, H, topLeft, bottomLeft, bottomRight, topRight, roughness, min, max);
             terrainGenerator.NormalizeHeightMap(terrain);
@@ -235,7 +246,6 @@ namespace Generating
             base.OnRenderFrame(e);
             //testDraw();
             GL.Enable(EnableCap.DepthTest);
-            //GL.DepthFunc(DepthFunction.Always);
             //RenderMesh();
             fbo.BindReflectionFrameBuffer();
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
@@ -245,20 +255,26 @@ namespace Generating
             camera.Update();
             GL.Uniform4(terrainShader.Uniforms["plane"], HorizontalPlaneReflection);
 
+            skybox.Render(camera.Projection, camera.ModelView);
             RenderTexturedHeightMap();
+            
             fbo.BindRefractionFrameBuffer();
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
             camera.Eye.Y += distance;
             camera.Pitch = -camera.Pitch;
             camera.Update();
             GL.Uniform4(terrainShader.Uniforms["plane"], HorizontalPlaneRefraction);
+
+            skybox.Render(camera.Projection, camera.ModelView);
             RenderTexturedHeightMap();
 
             fbo.UnbindFrameBuffer();
+
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
             GL.Uniform4(terrainShader.Uniforms["plane"], HorizontalPlaneWorld);
             RenderTexturedHeightMap();
             RenderWater();
+            skybox.Render(camera.Projection, camera.ModelView);
             RenderGui(guiReflect);
             RenderGui(guiRefract);
             SwapBuffers();
@@ -427,11 +443,21 @@ namespace Generating
             GL.BindTexture(TextureTarget.Texture2D, fbo.RefractionTexture);
             GL.BindSampler((int)TextureUnit.Texture1, fbo.RefractionSampler);
 
+            GL.ActiveTexture(TextureUnit.Texture2);
+            GL.BindTexture(TextureTarget.Texture2D, fbo.DudvMapTexture.ID);
+            GL.BindSampler((int)TextureUnit.Texture2, fbo.DudvMapTexture.ID);
+
+            time += waterSpeed;
+            time %= 1;
             GL.UniformMatrix4(waterShader.Uniforms["projectionMatrix"], false, ref camera.Projection);
             GL.UniformMatrix4(waterShader.Uniforms["modelMatrix"], false, ref model);
             GL.UniformMatrix4(waterShader.Uniforms["viewMatrix"], false, ref camera.ModelView);
             GL.Uniform1(waterShader.Uniforms["reflectionTexture"], 0);
             GL.Uniform1(waterShader.Uniforms["refractionTexture"], 1);
+            GL.Uniform1(waterShader.Uniforms["dudvMapTexture"], 2);
+            GL.Uniform1(waterShader.Uniforms["waveStrength"], wave);
+            GL.Uniform1(waterShader.Uniforms["tiling"], tiling);
+            GL.Uniform1(waterShader.Uniforms["time"], time);
 
             GL.BindBuffer(BufferTarget.ArrayBuffer, waterPlane.VerticesBuffer);
             GL.EnableVertexAttribArray(terrainShader.AttribLocation["inPosition"]);

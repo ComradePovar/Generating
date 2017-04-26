@@ -103,7 +103,7 @@ namespace Generating
                     if (HeightMap[i, j] < Min)
                         Min = HeightMap[i, j];
                 }
-            terrain.WaterHeight = 0.13f * (Max - Min) + Min;
+            terrain.WaterHeight = 0.18f * (Max - Min) + Min;
         }
         void save(string name, float[,] array, Color4 c)
         {

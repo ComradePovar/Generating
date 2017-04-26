@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using OpenTK;
 using OpenTK.Graphics.OpenGL;
+using Generating.Textures;
 
 namespace Generating
 {
@@ -30,8 +31,11 @@ namespace Generating
         public int RefractionDepthTexture { get; private set; }
         public int RefractionSampler { get; private set; }
 
+        public Texture2D DudvMapTexture { get; private set; }
+
         public WaterFBO(int defaultWidth, int defaultHeight)
         {
+            DudvMapTexture = new Texture2D("dudvMap.jpg");
             this.defaultWidth = defaultWidth;
             this.defaultHeight = defaultHeight;
             initReflectionFrameBuffer();
