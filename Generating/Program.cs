@@ -106,6 +106,7 @@ namespace Generating
             waterShader.Uniforms["waveStrength"] = GL.GetUniformLocation(waterShader.ID, "waveStrength");
             waterShader.Uniforms["tiling"] = GL.GetUniformLocation(waterShader.ID, "tiling");
             waterShader.Uniforms["time"] = GL.GetUniformLocation(waterShader.ID, "time");
+            waterShader.Uniforms["cameraPosition"] = GL.GetUniformLocation(waterShader.ID, "cameraPosition");
 
             waterShader.AttribLocation["inPosition"] = GL.GetAttribLocation(waterShader.ID, "inPosition");
 
@@ -174,8 +175,8 @@ namespace Generating
 
             terrainGenerator.GenerateHeightMap(terrain, W, H, topLeft, bottomLeft, bottomRight, topRight, roughness, min, max);
             terrainGenerator.NormalizeHeightMap(terrain);
-            HorizontalPlaneReflection = new Vector4(0.0f, -1.0f, 0.0f, terrain.WaterHeight);
-            HorizontalPlaneRefraction = new Vector4(0.0f, 1.0f, 0.0f, terrain.WaterHeight);
+            HorizontalPlaneReflection = new Vector4(0.0f, 1.0f, 0.0f, -terrain.WaterHeight);
+            HorizontalPlaneRefraction = new Vector4(0.0f, -1.0f, 0.0f, terrain.WaterHeight);
             HorizontalPlaneWorld = new Vector4(0.0f, -1.0f, 0.0f, 100000);
 
             myTriangle = new Vector3[W * H];
@@ -253,26 +254,23 @@ namespace Generating
             camera.Eye.Y -= distance;
             camera.Pitch = -camera.Pitch;
             camera.Update();
-            GL.Uniform4(terrainShader.Uniforms["plane"], HorizontalPlaneReflection);
 
             skybox.Render(camera.Projection, camera.ModelView);
-            RenderTexturedHeightMap();
+            RenderTexturedHeightMap(HorizontalPlaneReflection);
             
             fbo.BindRefractionFrameBuffer();
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
             camera.Eye.Y += distance;
             camera.Pitch = -camera.Pitch;
             camera.Update();
-            GL.Uniform4(terrainShader.Uniforms["plane"], HorizontalPlaneRefraction);
 
             skybox.Render(camera.Projection, camera.ModelView);
-            RenderTexturedHeightMap();
+            RenderTexturedHeightMap(HorizontalPlaneRefraction);
 
             fbo.UnbindFrameBuffer();
 
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
-            GL.Uniform4(terrainShader.Uniforms["plane"], HorizontalPlaneWorld);
-            RenderTexturedHeightMap();
+            RenderTexturedHeightMap(HorizontalPlaneWorld);
             RenderWater();
             skybox.Render(camera.Projection, camera.ModelView);
             RenderGui(guiReflect);
@@ -333,7 +331,7 @@ namespace Generating
             GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
             GL.BindTexture(TextureTarget.Texture2D, 0);
         }
-        private void RenderTexturedHeightMap()
+        private void RenderTexturedHeightMap(Vector4 horizontalPlane)
         {
             //if (!isInit && renderMode == RenderMode.Textured)
             {
@@ -422,6 +420,7 @@ namespace Generating
             GL.Uniform1(terrainShader.Uniforms["fog.start"], 30.0f);
             GL.Uniform1(terrainShader.Uniforms["fog.end"], 100.0f);
             GL.Uniform1(terrainShader.Uniforms["fog.type"], 2);
+            GL.Uniform4(terrainShader.Uniforms["plane"], horizontalPlane);
 
             GL.DrawElements(BeginMode.TriangleStrip, terrain.IndicesCount, DrawElementsType.UnsignedInt, 0);
             //terrainShader.Stop();
@@ -458,6 +457,7 @@ namespace Generating
             GL.Uniform1(waterShader.Uniforms["waveStrength"], wave);
             GL.Uniform1(waterShader.Uniforms["tiling"], tiling);
             GL.Uniform1(waterShader.Uniforms["time"], time);
+            GL.Uniform3(waterShader.Uniforms["cameraPosition"], ref camera.Eye);
 
             GL.BindBuffer(BufferTarget.ArrayBuffer, waterPlane.VerticesBuffer);
             GL.EnableVertexAttribArray(terrainShader.AttribLocation["inPosition"]);

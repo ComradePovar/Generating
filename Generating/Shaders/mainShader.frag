@@ -80,8 +80,7 @@ void main()
 
 	float height = normalizedHeight;
     if (height <= waterUpperBound) {
-        float waterInfluence = (waterUpperBound - height) / (waterUpperBound);
-		outputColor = water * waterInfluence + sand * (1.0 - waterInfluence);
+		outputColor = sand;
 	}
 	else if (height <= sandLowerBound) {
 		if (moisture <= moistureLevel1) {

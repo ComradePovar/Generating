@@ -2,6 +2,7 @@
 
 in vec4 clipSpace;
 in vec2 texCoords;
+in vec3 cameraVector;
 
 out vec4 outputColor;
 
@@ -32,6 +33,9 @@ void main(){
 	vec4 reflectionColor = texture2D(reflectionTexture, reflectTexCoords);
 	vec4 refractionColor = texture2D(refractionTexture, refractTexCoords);
 
-	outputColor = mix(reflectionColor, refractionColor, 0.5);
+	vec3 viewVector = normalize(cameraVector);
+	float viewAngleInfluence = dot(viewVector, vec3(0.0, 1.0, 0.0));
+
+	outputColor = mix(reflectionColor, refractionColor, viewAngleInfluence);
 	outputColor = mix(outputColor, vec4(0.0, 0.3, 0.5, 1.0), 0.2);
 }
