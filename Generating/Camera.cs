@@ -48,7 +48,7 @@ namespace Generating
 
         public void OnResize(int width, int height)
         {
-            Projection = Matrix4.CreatePerspectiveFieldOfView((float)Math.PI / 4f, width / (float)height, 1.0f, 10000.0f);
+            Projection = Matrix4.CreatePerspectiveFieldOfView((float)Math.PI / 4f, width / (float)height, 1.0f, 20000.0f);
             GL.MatrixMode(MatrixMode.Projection);
             GL.LoadMatrix(ref Projection);
         }
@@ -93,23 +93,23 @@ namespace Generating
                 Translate(-MovementSpeed * (float)Math.Sin(Facing + MathHelper.PiOver2), 0, -MovementSpeed * (float)Math.Cos(Facing + MathHelper.PiOver2));
             if (keyboard[Key.KeypadPlus])
             {
-                scene.tiling += 0.1f;
-                Console.WriteLine("tiling "+scene.tiling);
+                scene.waterSpecularIntensity += 0.1f;
+                Console.WriteLine("specIntensity " + scene.waterSpecularIntensity);
             }
             if (keyboard[Key.KeypadMinus])
             {
-                scene.tiling -= 0.1f;
-                Console.WriteLine("tiling "+scene.tiling);
+                scene.waterSpecularIntensity -= 0.1f;
+                Console.WriteLine("specIntensity " + scene.waterSpecularIntensity);
             }
             if (keyboard[Key.Plus])
             {
-                scene.wave += 0.0005f;
-                Console.WriteLine("wave " + scene.wave);
+                scene.waterSpecularPower += 0.1f;
+                Console.WriteLine("waterSpecularPower " + scene.waterSpecularPower);
             }
             if (keyboard[Key.Minus])
             {
-                scene.wave -= 0.0005f;
-                Console.WriteLine("wave " + scene.wave);
+                scene.waterSpecularPower -= 0.1f;
+                Console.WriteLine("waterSpecularPower " + scene.waterSpecularPower);
             }
             if (keyboard[Key.K])
             {

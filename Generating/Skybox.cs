@@ -73,10 +73,10 @@ namespace Generating
                 //bottom
                 new Vector3(-size, -size, -size),
                 new Vector3(-size, -size, size),
-                new Vector3(size, -size, -size),
-                new Vector3(size, -size, -size),
                 new Vector3(size, -size, size),
-                new Vector3(-size, -size, size)
+                new Vector3(size, -size, size),
+                new Vector3(size, -size, -size),
+                new Vector3(-size, -size, -size)
             };
             cube = new VAO();
             cube.BindVerticesBuffer(vertices);

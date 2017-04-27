@@ -48,6 +48,8 @@ namespace Generating
         private Light light;
         public float specularIntensity = 1;
         public float specularPower = 2;
+        public float waterSpecularIntensity = 0.1f;
+        public float waterSpecularPower = 2;
         public float wave = 0.02f;
         public float tiling = 1;
         public float waterSpeed = 0.0003f;
@@ -107,8 +109,14 @@ namespace Generating
             waterShader.Uniforms["tiling"] = GL.GetUniformLocation(waterShader.ID, "tiling");
             waterShader.Uniforms["time"] = GL.GetUniformLocation(waterShader.ID, "time");
             waterShader.Uniforms["cameraPosition"] = GL.GetUniformLocation(waterShader.ID, "cameraPosition");
+            waterShader.Uniforms["normalMap"] = GL.GetUniformLocation(waterShader.ID, "normalMap");
+            waterShader.Uniforms["lightDirection"] = GL.GetUniformLocation(waterShader.ID, "lightDirection");
+            waterShader.Uniforms["lightColor"] = GL.GetUniformLocation(waterShader.ID, "lightColor");
+            waterShader.Uniforms["specularIntensity"] = GL.GetUniformLocation(waterShader.ID, "specularIntensity");
+            waterShader.Uniforms["specularPower"] = GL.GetUniformLocation(waterShader.ID, "specularPower");
 
             waterShader.AttribLocation["inPosition"] = GL.GetAttribLocation(waterShader.ID, "inPosition");
+            waterShader.AttribLocation["inTexCoords"] = GL.GetAttribLocation(waterShader.ID, "inTexCoords");
 
             guiShader.Uniforms["modelMatrix"] = GL.GetUniformLocation(guiShader.ID, "modelMatrix");
             guiShader.Uniforms["guiTexture"] = GL.GetUniformLocation(guiShader.ID, "guiTexture");
@@ -180,11 +188,16 @@ namespace Generating
             HorizontalPlaneWorld = new Vector4(0.0f, -1.0f, 0.0f, 100000);
 
             myTriangle = new Vector3[W * H];
+            Vector2[] texCoords = new Vector2[W * H];
             for (int i = 0; i < W; i++)
                 for (int j = 0; j < H; j++)
+                {
                     myTriangle[i * W + j] = new Vector3(j * zoom, terrain.WaterHeight, i * zoom);
+                    texCoords[i * W + j] = new Vector2(j * zoom * 3/ (H - 1), i * zoom * 3/ (W - 1));
+                }
 
             waterPlane.BindVerticesBuffer(myTriangle);
+            waterPlane.BindTexCoordsBuffer(texCoords);
             
             guiReflect = new Gui(fbo.ReflectionTexture, new Vector3(-0.7f, 0.5f, 0.0f), new Vector3(0.25f, 0.25f, 0.0f));
             guiRefract = new Gui(fbo.RefractionTexture, new Vector3(0.7f, 0.5f, 0.0f), new Vector3(0.25f, 0.25f, 0.0f));
@@ -446,6 +459,10 @@ namespace Generating
             GL.BindTexture(TextureTarget.Texture2D, fbo.DudvMapTexture.ID);
             GL.BindSampler((int)TextureUnit.Texture2, fbo.DudvMapTexture.ID);
 
+            GL.ActiveTexture(TextureUnit.Texture3);
+            GL.BindTexture(TextureTarget.Texture2D, fbo.NormalMapTexture.ID);
+            GL.BindSampler((int)TextureUnit.Texture3, fbo.NormalMapTexture.ID);
+
             time += waterSpeed;
             time %= 1;
             GL.UniformMatrix4(waterShader.Uniforms["projectionMatrix"], false, ref camera.Projection);
@@ -454,14 +471,24 @@ namespace Generating
             GL.Uniform1(waterShader.Uniforms["reflectionTexture"], 0);
             GL.Uniform1(waterShader.Uniforms["refractionTexture"], 1);
             GL.Uniform1(waterShader.Uniforms["dudvMapTexture"], 2);
+            GL.Uniform1(waterShader.Uniforms["normalMap"], 3);
             GL.Uniform1(waterShader.Uniforms["waveStrength"], wave);
             GL.Uniform1(waterShader.Uniforms["tiling"], tiling);
             GL.Uniform1(waterShader.Uniforms["time"], time);
             GL.Uniform3(waterShader.Uniforms["cameraPosition"], ref camera.Eye);
+            GL.Uniform3(waterShader.Uniforms["lightDirection"], ref light.Direction);
+            GL.Uniform3(waterShader.Uniforms["lightColor"], ref light.Color);
+            GL.Uniform1(waterShader.Uniforms["specularIntensity"], waterSpecularIntensity);
+            GL.Uniform1(waterShader.Uniforms["specularPower"], waterSpecularPower);
 
             GL.BindBuffer(BufferTarget.ArrayBuffer, waterPlane.VerticesBuffer);
             GL.EnableVertexAttribArray(terrainShader.AttribLocation["inPosition"]);
             GL.VertexAttribPointer(terrainShader.AttribLocation["inPosition"], 3, VertexAttribPointerType.Float, false, 0, 0);
+
+            GL.BindBuffer(BufferTarget.ArrayBuffer, waterPlane.TexCoordsBuffer);
+            GL.EnableVertexAttribArray(waterShader.AttribLocation["inTexCoords"]);
+            GL.VertexAttribPointer(waterShader.AttribLocation["inTexCoords"], 2, VertexAttribPointerType.Float, false, 0, 0);
+
             GL.BindBuffer(BufferTarget.ElementArrayBuffer, terrain.IndicesBuffer);
             GL.DrawElements(BeginMode.TriangleStrip, terrain.IndicesCount, DrawElementsType.UnsignedInt, 0);
             waterShader.Stop();

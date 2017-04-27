@@ -122,15 +122,16 @@
     <EmbeddedResource Include="Assets\sand.jpg" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Assets\dudvMap.jpg" />
-  </ItemGroup>
-  <ItemGroup>
     <EmbeddedResource Include="Assets\Skybox\back.jpg" />
     <EmbeddedResource Include="Assets\Skybox\bottom.jpg" />
     <EmbeddedResource Include="Assets\Skybox\front.jpg" />
     <EmbeddedResource Include="Assets\Skybox\left.jpg" />
     <EmbeddedResource Include="Assets\Skybox\right.jpg" />
     <EmbeddedResource Include="Assets\Skybox\top.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Assets\dudvMap.jpg" />
+    <EmbeddedResource Include="Assets\normalMap.jpg" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

@@ -32,10 +32,12 @@ namespace Generating
         public int RefractionSampler { get; private set; }
 
         public Texture2D DudvMapTexture { get; private set; }
+        public Texture2D NormalMapTexture { get; private set; }
 
         public WaterFBO(int defaultWidth, int defaultHeight)
         {
             DudvMapTexture = new Texture2D("dudvMap.jpg");
+            NormalMapTexture = new Texture2D("normalMap.jpg");
             this.defaultWidth = defaultWidth;
             this.defaultHeight = defaultHeight;
             initReflectionFrameBuffer();
