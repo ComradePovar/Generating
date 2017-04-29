@@ -114,6 +114,7 @@ namespace Generating
             waterShader.Uniforms["lightColor"] = GL.GetUniformLocation(waterShader.ID, "lightColor");
             waterShader.Uniforms["specularIntensity"] = GL.GetUniformLocation(waterShader.ID, "specularIntensity");
             waterShader.Uniforms["specularPower"] = GL.GetUniformLocation(waterShader.ID, "specularPower");
+            waterShader.Uniforms["depthMap"] = GL.GetUniformLocation(waterShader.ID, "depthMap");
 
             waterShader.AttribLocation["inPosition"] = GL.GetAttribLocation(waterShader.ID, "inPosition");
             waterShader.AttribLocation["inTexCoords"] = GL.GetAttribLocation(waterShader.ID, "inTexCoords");
@@ -183,8 +184,8 @@ namespace Generating
 
             terrainGenerator.GenerateHeightMap(terrain, W, H, topLeft, bottomLeft, bottomRight, topRight, roughness, min, max);
             terrainGenerator.NormalizeHeightMap(terrain);
-            HorizontalPlaneReflection = new Vector4(0.0f, 1.0f, 0.0f, -terrain.WaterHeight);
-            HorizontalPlaneRefraction = new Vector4(0.0f, -1.0f, 0.0f, terrain.WaterHeight);
+            HorizontalPlaneReflection = new Vector4(0.0f, 1.0f, 0.0f, -terrain.WaterHeight + terrain.WaterHeight*0.01f);
+            HorizontalPlaneRefraction = new Vector4(0.0f, -1.0f, 0.0f, terrain.WaterHeight + terrain.WaterHeight*0.01f);
             HorizontalPlaneWorld = new Vector4(0.0f, -1.0f, 0.0f, 100000);
 
             myTriangle = new Vector3[W * H];
@@ -270,16 +271,19 @@ namespace Generating
 
             skybox.Render(camera.Projection, camera.ModelView);
             RenderTexturedHeightMap(HorizontalPlaneReflection);
-            
-            fbo.BindRefractionFrameBuffer();
-            GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+
             camera.Eye.Y += distance;
             camera.Pitch = -camera.Pitch;
             camera.Update();
 
+            fbo.BindRefractionFrameBuffer();
+            GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+            //GL.DepthFunc(DepthFunction.Always);
+
             skybox.Render(camera.Projection, camera.ModelView);
             RenderTexturedHeightMap(HorizontalPlaneRefraction);
 
+            //GL.DepthFunc(DepthFunction.Never);
             fbo.UnbindFrameBuffer();
 
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
@@ -443,6 +447,8 @@ namespace Generating
         private void RenderWater()
         {
             waterShader.Start();
+            GL.Enable(EnableCap.Blend);
+            GL.BlendFunc(BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
             GL.Enable(EnableCap.Texture2D);
             GL.Enable(EnableCap.PrimitiveRestart);
             GL.PrimitiveRestartIndex(terrain.IndicesCount);
@@ -463,6 +469,10 @@ namespace Generating
             GL.BindTexture(TextureTarget.Texture2D, fbo.NormalMapTexture.ID);
             GL.BindSampler((int)TextureUnit.Texture3, fbo.NormalMapTexture.ID);
 
+            GL.ActiveTexture(TextureUnit.Texture4);
+            GL.BindTexture(TextureTarget.Texture2D, fbo.RefractionDepthTexture);
+            GL.BindSampler((int)TextureUnit.Texture4, fbo.RefractionDepthTexture);
+
             time += waterSpeed;
             time %= 1;
             GL.UniformMatrix4(waterShader.Uniforms["projectionMatrix"], false, ref camera.Projection);
@@ -472,6 +482,7 @@ namespace Generating
             GL.Uniform1(waterShader.Uniforms["refractionTexture"], 1);
             GL.Uniform1(waterShader.Uniforms["dudvMapTexture"], 2);
             GL.Uniform1(waterShader.Uniforms["normalMap"], 3);
+            GL.Uniform1(waterShader.Uniforms["depthMap"], 4);
             GL.Uniform1(waterShader.Uniforms["waveStrength"], wave);
             GL.Uniform1(waterShader.Uniforms["tiling"], tiling);
             GL.Uniform1(waterShader.Uniforms["time"], time);
@@ -492,7 +503,7 @@ namespace Generating
             GL.BindBuffer(BufferTarget.ElementArrayBuffer, terrain.IndicesBuffer);
             GL.DrawElements(BeginMode.TriangleStrip, terrain.IndicesCount, DrawElementsType.UnsignedInt, 0);
             waterShader.Stop();
-
+            GL.Disable(EnableCap.Blend);
         }
         private void testDraw()
         {
