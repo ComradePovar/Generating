@@ -16,8 +16,7 @@ uniform vec3 lightColor;
 uniform vec3 lightDirection;
 uniform float specularIntensity;
 uniform float specularPower;
-
-const float waveStrength = 0.02;
+uniform float waveStrength;
 
 vec4 getSpecularColor(vec3 vertexToCameraVector, vec3 normal);
 
@@ -36,9 +35,6 @@ void main(){
 	float waterDistance = 2.0 * near * far / (far + near - (2.0 * depth - 1.0) * (far - near));
 	float waterDepth = floorDistance - waterDistance;
 
-	//vec2 distortion1 = (texture2D(dudvMapTexture, vec2(texCoords.x + time, texCoords.y)).rg * 2.0 - 1.0) * waveStrength;
-	//vec2 distortion2 = (texture2D(dudvMapTexture, vec2(-texCoords.x + time, texCoords.y + time)).rg * 2.0 - 1.0) * waveStrength;
-	//vec2 totalDistortion = distortion1 + distortion2;
 	vec2 distortedTexCoords = texture2D(dudvMapTexture, vec2(texCoords.x + time, texCoords.y)).rg * 0.1;
 	distortedTexCoords = texCoords + vec2(distortedTexCoords.x, distortedTexCoords.y + time);
 	vec2 totalDistortion = (texture2D(dudvMapTexture, distortedTexCoords).rg * 2.0 - 1.0) * waveStrength * clamp(waterDepth/5.0, 0.0, 1.0);

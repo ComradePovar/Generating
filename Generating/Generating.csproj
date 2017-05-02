@@ -53,18 +53,22 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Interfaces\IRenderable.cs" />
+    <Compile Include="Interfaces\IResizable.cs" />
+    <Compile Include="Scene.cs" />
+    <Compile Include="SceneObjects\Fog.cs" />
+    <Compile Include="SceneObjects\Terrain.cs" />
     <Compile Include="Textures\CubeMapTexture.cs" />
     <Compile Include="GUI\Gui.cs" />
     <Compile Include="GUI\GuiTexture.cs" />
-    <Compile Include="Skybox.cs" />
+    <Compile Include="SceneObjects\Skybox.cs" />
     <Compile Include="Textures\Texture.cs" />
-    <Compile Include="WaterFBO.cs" />
-    <Compile Include="Light.cs" />
-    <Compile Include="Noise.cs" />
+    <Compile Include="Water.cs" />
+    <Compile Include="SceneObjects\Light.cs" />
     <Compile Include="Shaders\Shader.cs" />
     <Compile Include="Shaders\ShaderProgram.cs" />
     <Compile Include="Textures\Texture2D.cs" />
-    <Compile Include="Camera.cs" />
+    <Compile Include="SceneObjects\Camera.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TerrainGenerator.cs" />
@@ -133,6 +137,7 @@
     <EmbeddedResource Include="Assets\dudvMap.jpg" />
     <EmbeddedResource Include="Assets\normalMap.jpg" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

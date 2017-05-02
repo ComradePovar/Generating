@@ -5,12 +5,13 @@ using System.Text;
 using System.Threading.Tasks;
 using Generating.Textures;
 using Generating.Shaders;
+using Generating.Interfaces;
 using OpenTK;
 using OpenTK.Graphics.OpenGL;
 
-namespace Generating
+namespace Generating.SceneObjects
 {
-    class Skybox
+    class Skybox : IRenderable
     {
         private CubeMapTexture texture;
         private ShaderProgram skyboxShader;
@@ -97,14 +98,22 @@ namespace Generating
             skyboxShader.Uniforms["skyboxTexture"] = GL.GetUniformLocation(skyboxShader.ID, "skyboxTexture");
         }
 
-        public void Render(Matrix4 projectionMatrix, Matrix4 viewMatrix)
+        public void Render()
         {
-            viewMatrix.M14 = viewMatrix.M14 = viewMatrix.M14 = 0;
+            BindSkyboxRendererSettings();
+
+            GL.DrawArrays(BeginMode.Triangles, 0, cube.VerticesCount);
+
+            UnbindSkyboxRendererSettings();
+        }
+
+        private void BindSkyboxRendererSettings()
+        {
+            Camera.Instance.View.M14 = Camera.Instance.View.M24 = Camera.Instance.View.M34 = 0;
             modelMatrix *= Matrix4.CreateRotationY(MathHelper.DegreesToRadians(0.005f));
 
             skyboxShader.Start();
             GL.Enable(EnableCap.TextureCubeMap);
-            GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Fill);
             GL.BindVertexArray(cube.ID);
 
             GL.BindBuffer(BufferTarget.ArrayBuffer, cube.VerticesBuffer);
@@ -114,14 +123,15 @@ namespace Generating
             GL.ActiveTexture(TextureUnit.Texture0);
             GL.BindTexture(TextureTarget.TextureCubeMap, texture.ID);
 
-            GL.UniformMatrix4(skyboxShader.Uniforms["projectionMatrix"], false, ref projectionMatrix);
-            GL.UniformMatrix4(skyboxShader.Uniforms["viewMatrix"], false, ref viewMatrix);
+            GL.UniformMatrix4(skyboxShader.Uniforms["projectionMatrix"], false, ref Camera.Instance.Projection);
+            GL.UniformMatrix4(skyboxShader.Uniforms["viewMatrix"], false, ref Camera.Instance.View);
             GL.UniformMatrix4(skyboxShader.Uniforms["modelMatrix"], false, ref modelMatrix);
             GL.Uniform1(skyboxShader.Uniforms["skyboxTexture"], 0);
+        }
 
-            GL.DrawArrays(BeginMode.Triangles, 0, cube.VerticesCount);
-
-            GL.DisableVertexAttribArray(skyboxShader.AttribLocation["inPosition"]);
+        private void UnbindSkyboxRendererSettings()
+        {
+            GL.Disable(EnableCap.TextureCubeMap);
             GL.BindTexture(TextureTarget.TextureCubeMap, 0);
             GL.BindVertexArray(0);
             skyboxShader.Stop();

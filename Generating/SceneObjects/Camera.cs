@@ -2,10 +2,11 @@
 using OpenTK;
 using OpenTK.Input;
 using OpenTK.Graphics.OpenGL;
+using Generating.Interfaces;
 
-namespace Generating
+namespace Generating.SceneObjects
 {
-    public class Camera
+    public class Camera : IResizable
     {
         private static Camera instance;
         public Vector3 Eye;
@@ -19,7 +20,7 @@ namespace Generating
 
         public float MovementSpeed { get; set; }
         public float RotationSpeed { get; set; }
-        public Matrix4 ModelView;
+        public Matrix4 View;
         public Matrix4 Normal;
         public Matrix4 Projection;
 
@@ -41,14 +42,14 @@ namespace Generating
             MovementSpeed = 5.5f;
             RotationSpeed = .001f;
 
-            ModelView = Matrix4.LookAt(Eye, target, upVector);
+            View = Matrix4.LookAt(Eye, target, upVector);
             GL.MatrixMode(MatrixMode.Modelview);
-            GL.LoadMatrix(ref ModelView);
+            GL.LoadMatrix(ref View);
         }
 
-        public void OnResize(int width, int height)
+        public void Resize(int width, int height)
         {
-            Projection = Matrix4.CreatePerspectiveFieldOfView((float)Math.PI / 4f, width / (float)height, 1.0f, 20000.0f);
+            Projection = Matrix4.CreatePerspectiveFieldOfView(MathHelper.PiOver4, width / (float)height, 1.0f, 20000.0f);
             GL.MatrixMode(MatrixMode.Projection);
             GL.LoadMatrix(ref Projection);
         }
@@ -91,48 +92,48 @@ namespace Generating
                 Translate(MovementSpeed * (float)Math.Sin(Facing + MathHelper.PiOver2), 0, MovementSpeed * (float)Math.Cos(Facing + MathHelper.PiOver2));
             if (keyboard[Key.D])
                 Translate(-MovementSpeed * (float)Math.Sin(Facing + MathHelper.PiOver2), 0, -MovementSpeed * (float)Math.Cos(Facing + MathHelper.PiOver2));
-            if (keyboard[Key.KeypadPlus])
-            {
-                scene.waterSpecularIntensity += 0.1f;
-                Console.WriteLine("specIntensity " + scene.waterSpecularIntensity);
-            }
-            if (keyboard[Key.KeypadMinus])
-            {
-                scene.waterSpecularIntensity -= 0.1f;
-                Console.WriteLine("specIntensity " + scene.waterSpecularIntensity);
-            }
-            if (keyboard[Key.Plus])
-            {
-                scene.waterSpecularPower += 0.1f;
-                Console.WriteLine("waterSpecularPower " + scene.waterSpecularPower);
-            }
-            if (keyboard[Key.Minus])
-            {
-                scene.waterSpecularPower -= 0.1f;
-                Console.WriteLine("waterSpecularPower " + scene.waterSpecularPower);
-            }
-            if (keyboard[Key.K])
-            {
-                scene.waterSpeed += 0.001f;
-                Console.WriteLine("time " + scene.waterSpeed);
-            }
-            if (keyboard[Key.L])
-            {
-                scene.waterSpeed -= 0.001f;
-                Console.WriteLine("time " + scene.waterSpeed);
-            }
+            //if (keyboard[Key.KeypadPlus])
+            //{
+            //    scene.waterSpecularIntensity += 0.1f;
+            //    Console.WriteLine("specIntensity " + scene.waterSpecularIntensity);
+            //}
+            //if (keyboard[Key.KeypadMinus])
+            //{
+            //    scene.waterSpecularIntensity -= 0.1f;
+            //    Console.WriteLine("specIntensity " + scene.waterSpecularIntensity);
+            //}
+            //if (keyboard[Key.Plus])
+            //{
+            //    scene.waterSpecularPower += 0.1f;
+            //    Console.WriteLine("waterSpecularPower " + scene.waterSpecularPower);
+            //}
+            //if (keyboard[Key.Minus])
+            //{
+            //    scene.waterSpecularPower -= 0.1f;
+            //    Console.WriteLine("waterSpecularPower " + scene.waterSpecularPower);
+            //}
+            //if (keyboard[Key.K])
+            //{
+            //    scene.waterSpeed += 0.001f;
+            //    Console.WriteLine("time " + scene.waterSpeed);
+            //}
+            //if (keyboard[Key.L])
+            //{
+            //    scene.waterSpeed -= 0.001f;
+            //    Console.WriteLine("time " + scene.waterSpeed);
+            //}
             if (keyboard[Key.LShift])
                 Translate(0, MovementSpeed, 0);
             if (keyboard[Key.LControl])
                 Translate(0, -MovementSpeed, 0);
-            Update();
+            UpdateView();
         }
-        public void Update()
+        public void UpdateView()
         {
 
-            ModelView = Matrix4.LookAt(Eye, Eye + new Vector3((float)Math.Sin(Facing), (float)Math.Sin(Pitch), (float)Math.Cos(Facing)),
+            View = Matrix4.LookAt(Eye, Eye + new Vector3((float)Math.Sin(Facing), (float)Math.Sin(Pitch), (float)Math.Cos(Facing)),
                                                upVector);
-            Normal = Matrix4.Transpose(Matrix4.Invert(ModelView));
+            Normal = Matrix4.Transpose(Matrix4.Invert(View));
 
         }
     }

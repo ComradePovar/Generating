@@ -7,7 +7,7 @@ using System.Drawing;
 using OpenTK;
 using OpenTK.Graphics.OpenGL;
 
-namespace Generating
+namespace Generating.SceneObjects
 {
     class Light
     {
@@ -18,9 +18,9 @@ namespace Generating
         public float SpecularIntensity;
         public float SpecularPower;
 
-        public Light(float angle)
+        public Light(Vector3 lightPos, float angle)
         {
-            LightPos = new Vector3(-70, 100, 70);
+            LightPos = lightPos;
             Direction = LightPos;
             Direction.Normalize();
             Direction = -Direction;

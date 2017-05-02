@@ -173,7 +173,8 @@ void main()
 
 	float diffuseIntensity = max(0.0, dot(normalize(normal), -light.direction));
 	vec4 diffuseColor = vec4(1.0, 1.0, 1.0, 1.0);
-	diffuseColor = vec4(light.color*(light.ambientIntensity+diffuseIntensity), 1.0);
+	if (height > waterUpperBound)
+		diffuseColor = vec4(light.color*(light.ambientIntensity+diffuseIntensity), 1.0);
 
 	outputColor *= color*(diffuseColor + specularColor);
 

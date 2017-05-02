@@ -12,6 +12,16 @@ namespace Generating
 {
     class TerrainGenerator
     {
+        private static TerrainGenerator instance;
+        public static TerrainGenerator Instance
+        {
+            get
+            {
+                if (instance == null)
+                    instance = new TerrainGenerator();
+                return instance;
+            }
+        }
         public float Zoom { get; private set; }
         public int Width { get; set; }
         public int Height { get; set; }
@@ -32,31 +42,21 @@ namespace Generating
         public float[,] MoistureMap { get; private set; }
         private static Random rand = new Random();
 
-        public void GenerateHeightMap(VAO terrain, int width, int height, float topLeft, float bottomLeft, float bottomRight, float topRight, float roughness, float min, float max)
+        private TerrainGenerator() { }
+        public void GenerateTerrain(VAO terrain, int width, int height, float roughness, out float waterHeight)
         {
+
             Width = width;
             Height = height;
             Roughness = roughness;
-            this.Min = min;
-            this.Max = max;
-            Noise noise = new Noise();
-            noise.Reseed();
-            HeightMap = new float[Width, Height]; float ma = float.MinValue; float mi = float.MaxValue;
-            for (int i = 0; i < width; i++)
-                for (int j = 0; j < height; j++)
-                {
-                    HeightMap[i, j] = noise.NoiseAt((float)i / width, (float)j / height, 2);
-                    if (HeightMap[i, j] > ma)
-                        ma = HeightMap[i, j];
-                    if (HeightMap[i, j] < mi)
-                        mi = HeightMap[i, j];
-                }
-            
-            DiamondSquareAlgorithm(topLeft, bottomLeft, bottomRight, topRight);
+            this.Min = 0;
+            this.Max = 10;
+
+            DiamondSquareAlgorithm(0, 0, 0, 0);
             Vector2 center = new Vector2(width / 2, height / 2);
             float maxDistanceToCenter = (float)Math.Sqrt(Math.Pow(center.X, 2) + Math.Pow(center.Y, 2));
             float islandRadius = (float)width / 2;
-            NormalizeHeightMap();
+            NormalizeHeightMap(terrain);
 
             save("HM1.jpg", NormalizedHeightMap, new Color4(1.0f, 1.0f, 1.0f, 1.0f));
             for (int i = 0; i < Width; i++)
@@ -103,7 +103,9 @@ namespace Generating
                     if (HeightMap[i, j] < Min)
                         Min = HeightMap[i, j];
                 }
-            terrain.WaterHeight = 0.18f * (Max - Min) + Min;
+            waterHeight = 0.18f * (Max - Min) + Min;
+            CreateMesh(1, terrain);
+            NormalizeHeightMap(terrain);
         }
         void save(string name, float[,] array, Color4 c)
         {
@@ -187,6 +189,7 @@ namespace Generating
         }
         private void DiamondSquareAlgorithm(float topLeft, float bottomLeft, float bottomRight, float topRight)
         {
+            HeightMap = new float[Width, Height];
             int maxIndex = Width - 1;
             float displacement;
             //Init corners
@@ -255,7 +258,6 @@ namespace Generating
             terrain.BindVerticesBuffer(vertices);
             terrain.BindIndicesBuffer(indices);
             terrain.BindTexCoordsBuffer(texCoords);
-            //terrain.BindColorsBuffer(colors);
             CreateNormalMap(out normals);
             terrain.BindNormalsBuffer(normals);
             terrain.BindMoisturesBuffer(MoistureMap);
