@@ -23,7 +23,7 @@ namespace Generating.SceneObjects
         private Texture2D sand;
         private Texture2D darkgrass;
         
-        private Scene parentScene { get; }
+        public Scene ParentScene { get; }
 
         private Light light;
         private Fog fog;
@@ -54,16 +54,35 @@ namespace Generating.SceneObjects
             dirt = new Texture2D("dirt.jpg");
             sand = new Texture2D("sand.jpg");
 
-            this.parentScene = parentScene;
+            this.ParentScene = parentScene;
 
             Vector3 lightPos = new Vector3(-70, 100, 70);
-            light = new Light(lightPos, - 45.0f)
+            InitVAO();
+            InitShader();
+            InitLight(lightPos);
+            InitFog();
+            InitWater(lightPos, width, height, windowWidth, windowHeight);
+
+
+            horizontalPlaneReflection = new Vector4(0.0f, 1.0f, 0.0f, -waterHeight);
+            horizontalPlaneRefraction = new Vector4(0.0f, -1.0f, 0.0f, waterHeight + waterHeight * 0.01f);
+            horizontalPlaneWorld = new Vector4(0.0f, -1.0f, 0.0f, 100000);
+            modelMatrix = Matrix4.Identity;
+        }
+
+        private void InitLight(Vector3 lightPos)
+        {
+            light = new Light(lightPos, -45.0f)
             {
                 Color = new Vector3(1.0f, 1.0f, 1.0f),
                 AmbientIntensity = 0.25f,
                 SpecularIntensity = 1,
                 SpecularPower = 2
             };
+        }
+
+        private void InitFog()
+        {
             fog = new Fog()
             {
                 Color = new Vector4(0.5f, 0.5f, 0.5f, 1.0f),
@@ -72,28 +91,25 @@ namespace Generating.SceneObjects
                 End = 100.0f,
                 Type = FogType.Exp2
             };
+        }
 
+        private void InitWater(Vector3 lightPos, int width, int height, int windowWidth, int windowHeight)
+        {
             Light waterLight = new Light(lightPos, -45.0f)
             {
                 Color = new Vector3(1.0f, 1.0f, 1.0f),
                 SpecularIntensity = 0.1f,
                 SpecularPower = 2
             };
-
-            InitVAO();
-            InitShader();
             water = new Water(waterLight, windowWidth, windowHeight, width, height, zoom, waterHeight);
-
-            horizontalPlaneReflection = new Vector4(0.0f, 1.0f, 0.0f, -waterHeight + waterHeight * 0.01f);
-            horizontalPlaneRefraction = new Vector4(0.0f, -1.0f, 0.0f, waterHeight + waterHeight * 0.01f);
-            horizontalPlaneWorld = new Vector4(0.0f, -1.0f, 0.0f, 100000);
-            modelMatrix = Matrix4.Identity;
         }
 
         private void InitVAO()
         {
             vao = new VAO();
-            TerrainGenerator.Instance.GenerateTerrain(vao, Width, Height, roughness, out waterHeight);
+            float min = 0;
+            float max = 10;
+            TerrainGenerator.Instance.GenerateIsland(vao, Width, Height, roughness, min, max, zoom, out waterHeight);
         }
 
 
@@ -232,7 +248,7 @@ namespace Generating.SceneObjects
             GL.BindBuffer(BufferTarget.ElementArrayBuffer, 0);
             GL.BindTexture(TextureTarget.Texture2D, 0);
         }
-        bool flag = false;
+
         public void Render()
         {
             RenderWaterReflection();
@@ -255,7 +271,7 @@ namespace Generating.SceneObjects
             Camera.Instance.Pitch = -Camera.Instance.Pitch;
             Camera.Instance.UpdateView();
 
-            foreach (IRenderable obj in parentScene.renderableObjects)
+            foreach (IRenderable obj in ParentScene.renderableObjects)
                 if (obj != this)
                     obj.Render();
 
@@ -278,7 +294,7 @@ namespace Generating.SceneObjects
 
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
-            foreach (IRenderable obj in parentScene.renderableObjects)
+            foreach (IRenderable obj in ParentScene.renderableObjects)
                 if (obj != this)
                     obj.Render();
 

@@ -45,7 +45,7 @@ void main(){
 	reflectTexCoords.y = clamp(reflectTexCoords.y, -0.999, -0.001);
 
 	refractTexCoords += totalDistortion;
-	refractTexCoords = clamp(refractTexCoords, 0.001, 0.999);
+	refractTexCoords = clamp(refractTexCoords, 0.000, 0.999);
 
 	vec4 reflectionColor = texture2D(reflectionTexture, reflectTexCoords);
 	vec4 refractionColor = texture2D(refractionTexture, refractTexCoords);
@@ -56,9 +56,8 @@ void main(){
 	vec3 viewVector = normalize(cameraVector);
 	float viewAngleInfluence = dot(viewVector, normal);
 
-
-	outputColor = mix(reflectionColor, refractionColor, viewAngleInfluence);
-	outputColor = mix(outputColor, vec4(0.0, 0.4, 0.7, 1.0), 0.2) + getSpecularColor(viewVector, normal) * clamp(waterDepth/5.0, 0.0, 1.0);
+	outputColor = mix(reflectionColor, refractionColor, 0.5*viewAngleInfluence);
+	outputColor = mix(outputColor, vec4(0.0, 1.0, 1.0, 1.0), 0.2) + getSpecularColor(viewVector, normal) * clamp(waterDepth/5.0, 0.0, 1.0);
 	outputColor.a = clamp(waterDepth/15.0, 0.0, 1.0);
 }
 

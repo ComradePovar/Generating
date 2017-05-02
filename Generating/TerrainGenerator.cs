@@ -22,207 +22,159 @@ namespace Generating
                 return instance;
             }
         }
-        public float Zoom { get; private set; }
-        public int Width { get; set; }
-        public int Height { get; set; }
-        public float Roughness { get; set; }
-        public float Displacement { get; set; }
-        public float[,] HeightMap { get; private set; }
-        public float[,] NormalizedHeightMap { get; private set; }
-        public float[,] NormalHeightMap { get; private set; }
-        public float Min { get; set; }
-        public float Max { get; set; }
-        // 0) rock;
-        // 1) water;
-        // 2) mossyrock;
-        // 3) dirt;
-        // 4) sand;
-        // 5) darkgrass;
-        public float[,] BiomMap { get; private set; }
-        public float[,] MoistureMap { get; private set; }
+
         private static Random rand = new Random();
 
         private TerrainGenerator() { }
-        public void GenerateTerrain(VAO terrain, int width, int height, float roughness, out float waterHeight)
+        public void GenerateIsland(VAO terrain, int width, int height, float roughness, float min, float max, float zoom, out float waterHeight)
         {
+            float[,] heightMap = DiamondSquareAlgorithm(0, 0, 0, 0, width, height, roughness, min, max);
+            float[,] normalizedHeightMap = GetNormalizedArray(heightMap);
 
-            Width = width;
-            Height = height;
-            Roughness = roughness;
-            this.Min = 0;
-            this.Max = 10;
+            float waterUpperBound = 0.18f;
+            CreateIslandLandscape(heightMap, normalizedHeightMap, waterUpperBound, out waterHeight);
+            float[,] moistureMap = CreateMoistureMap(width, height, roughness, min, max, normalizedHeightMap);
 
-            DiamondSquareAlgorithm(0, 0, 0, 0);
+            CreateMesh(zoom, heightMap, terrain);
+            Vector3[] normalMap = CreateNormalMap(zoom, heightMap);
+            terrain.BindNormalizedHeightsBuffer(normalizedHeightMap);
+            terrain.BindNormalsBuffer(normalMap);
+            terrain.BindMoisturesBuffer(moistureMap);
+        }
+
+        private void CreateIslandLandscape(float[,] heightMap, float[,] normalizedHeightMap, float waterUpperBound, out float waterHeight)
+        {
+            int width = heightMap.GetLength(0);
+            int height = heightMap.GetLength(1);
             Vector2 center = new Vector2(width / 2, height / 2);
             float maxDistanceToCenter = (float)Math.Sqrt(Math.Pow(center.X, 2) + Math.Pow(center.Y, 2));
             float islandRadius = (float)width / 2;
-            NormalizeHeightMap(terrain);
 
-            save("HM1.jpg", NormalizedHeightMap, new Color4(1.0f, 1.0f, 1.0f, 1.0f));
-            for (int i = 0; i < Width; i++)
+            for (int i = 0; i < width; i++)
             {
-                for (int j = 0; j < Height; j++)
+                for (int j = 0; j < height; j++)
                 {
                     //круг
-                    float distanceToIsland = (float)Math.Sqrt(Math.Pow(i - islandRadius, 2) + Math.Pow(j - islandRadius, 2));
-                    float distanceToCenter = (float)Math.Sqrt(Math.Pow(i - center.X, 2) + Math.Pow(j - center.Y, 2));
-                    float maxWidth = islandRadius;
-                    float delta = distanceToIsland / maxWidth;
-                    float influence = delta * delta;
-                    influence = influence > 1f ? 0f : 1.0f - influence;
-                    NormalizedHeightMap[i, j] *= influence;
-                    HeightMap[i, j] *= influence;
-
-                    //квадрат
-                    //float distanceToIsland = (float)Math.Max(Math.Abs(i - islandRadius), Math.Abs(j - islandRadius));
-                    //float maxWidth = islandRadius - 10;
+                    //float distanceToIsland = (float)Math.Sqrt(Math.Pow(i - islandRadius, 2) + Math.Pow(j - islandRadius, 2));
+                    //float distanceToCenter = (float)Math.Sqrt(Math.Pow(i - center.X, 2) + Math.Pow(j - center.Y, 2));
+                    //float maxWidth = islandRadius;
                     //float delta = distanceToIsland / maxWidth;
                     //float influence = delta * delta;
-                    //influence = influence > 1.0f ? 0.0f : 1.0f - influence;
-                    //NormalizedHeightMap[i, j] *= influence;
-                    //HeightMap[i, j] *= influence;
+                    //influence = influence > 1f ? 0f : 1.0f - influence;
+                    //normalizedHeightMap[i, j] *= influence;
+                    //heightMap[i, j] *= influence;
+
+                    //квадрат
+                    float distanceToIsland = (float)Math.Max(Math.Abs(i - islandRadius), Math.Abs(j - islandRadius));
+                    float maxWidth = islandRadius - 10;
+                    float delta = distanceToIsland / maxWidth;
+                    float influence = delta * delta;
+                    influence = influence > 1.0f ? 0.0f : 1.0f - influence;
+                    normalizedHeightMap[i, j] *= influence;
+                    heightMap[i, j] *= influence;
 
                     //дефолт
                 }
             }
-            save("HM2.jpg", NormalizedHeightMap, new Color4(1.0f, 1.0f, 1.0f, 1.0f));
-            MoistureMap = normalizeMoisture(CreateMoistureMap());
+
+            float max = float.MinValue;
+            float min = float.MaxValue;
             for (int i = 0; i < width; i++)
                 for (int j = 0; j < height; j++)
                 {
-                    MoistureMap[i, j] *= (NormalizedHeightMap[i, j]) == 0.0f? 0.0f : (1.0f - NormalizedHeightMap[i, j]);
+                    if (heightMap[i, j] > max)
+                        max = heightMap[i, j];
+                    if (heightMap[i, j] < min)
+                        min = heightMap[i, j];
                 }
-            save("MoistureMap.jpg", MoistureMap, new Color4(1.0f, 0.0f, 0.0f, 1.0f));
-            float Max = float.MinValue;
-            float Min = float.MaxValue;
-            for (int i = 0; i < Width; i++)
-                for (int j = 0; j < Height; j++)
-                {
-                    if (HeightMap[i, j] > Max)
-                        Max = HeightMap[i, j];
-                    if (HeightMap[i, j] < Min)
-                        Min = HeightMap[i, j];
-                }
-            waterHeight = 0.18f * (Max - Min) + Min;
-            CreateMesh(1, terrain);
-            NormalizeHeightMap(terrain);
+            waterHeight = waterUpperBound * (max - min) + min;
         }
-        void save(string name, float[,] array, Color4 c)
+
+        //void Save(string name, float[,] array, Color4 c)
+        //{
+        //    Bitmap bitmap = new Bitmap(Width, Height);
+        //    for (int i = 0; i < Width; i++)
+        //        for (int j = 0; j < Height; j++)
+        //        {
+        //            Color4 color = new Color4(array[i, j], array[i, j], array[i, j], 1);
+        //            color.R *= c.R;
+        //            color.G *= c.G;
+        //            color.B *= c.B;
+        //            bitmap.SetPixel(i, j, (Color)color);
+        //        }
+        //    bitmap.Save("Assets/" + name, System.Drawing.Imaging.ImageFormat.Jpeg);
+        //}
+
+        private float[,] CreateMoistureMap(int width, int height, float roughness, float min, float max, float[,] normalizedHeightMap)
         {
-
-            Bitmap bitmap = new Bitmap(Width, Height);
-            for (int i = 0; i < Width; i++)
-                for (int j = 0; j < Height; j++)
+            float[,] moistureMap = DiamondSquareAlgorithm(0, 0, 0, 0, width, height, roughness, min, max);
+            moistureMap = GetNormalizedArray(moistureMap);
+            for (int i = 0; i < width; i++)
+                for (int j = 0; j < height; j++)
                 {
-                    Color4 color = new Color4(array[i, j], array[i, j], array[i, j], 1);
-                    color.R *= c.R;
-                    color.G *= c.G;
-                    color.B *= c.B;
-                    bitmap.SetPixel(i, j, (Color)color);
+                    moistureMap[i, j] *= (normalizedHeightMap[i, j]) == 0.0f ? 0.0f : (1.0f - normalizedHeightMap[i, j]);
                 }
-            bitmap.Save("Assets/" + name, System.Drawing.Imaging.ImageFormat.Jpeg);
-        }
-        float[,] CreateMoistureMap()
-        {
-            float[,] moistureMap = new float[Width, Height];
-            //Noise noise = new Noise();
-            //float detail = 10;
-            //float passes = 10;
-            //for (int i = 0; i < Width; i++)
-            //    for (int j = 0; j < Height; j++)
-            //        moistureMap[i, j] = noise.NoiseAt((float)i / Width * detail, (float)j / Height * detail, passes);
-            int maxIndex = Width - 1;
-            float displacement;
-            //Init corners
-
-            for (int squareSize = maxIndex; squareSize >= 2; squareSize /= 2)
-            {
-                int stepSize = squareSize / 2;
-                displacement = (Max - Min) * Roughness * ((float)squareSize / maxIndex);
-
-                //Squares
-                for (int x = 0; x < maxIndex; x += squareSize)
-                {
-                    for (int y = 0; y < maxIndex; y += squareSize)
-                    {
-                        moistureMap[x + stepSize, y + stepSize] = Math.Abs(GetRandomFloat(-displacement, displacement) +
-                                                                (moistureMap[x, y] + moistureMap[x + squareSize, y] + moistureMap[x, y + squareSize] +
-                                                                 moistureMap[x + squareSize, y + squareSize]) / 4);
-                    }
-                }
-
-                //Diamonds
-                // if the data should wrap then replace Width with maxIndex and uncomment 2 ifs below
-                for (int x = 0; x < Width; x += stepSize)
-                {
-                    for (int y = (x + stepSize) % squareSize; y < Width; y += squareSize)
-                    {
-                        moistureMap[x, y] = Math.Abs(GetRandomFloat(-displacement, displacement) +
-                                          (moistureMap[(x - stepSize + Width) % Width, y] + moistureMap[(x + stepSize) % Width, y] +
-                                           moistureMap[x, (y + stepSize) % Width] + moistureMap[x, (y - stepSize + Width) % Width]) / 4);
-                        //if (x == 0)
-                        //    HeightMap[maxIndex, y] = HeightMap[x, y];
-                        //if (y == 0)
-                        //    HeightMap[x, maxIndex] = HeightMap[x, y];
-                    }
-                }
-            }
             return moistureMap;
         }
-        float[,] normalizeMoisture(float[,] ar)
+
+        private float[,] GetNormalizedArray(float[,] array)
         {
+            int width = array.GetLength(0);
+            int height = array.GetLength(1);
             float max = float.MinValue;
             float min = float.MaxValue;
-            for (int i = 0; i < Width; i++)
-                for (int j = 0; j < Height; j++)
+            float[,] normalizedArray = new float[array.GetLength(0), array.GetLength(1)];
+            for (int i = 0; i < width; i++)
+                for (int j = 0; j < height; j++)
                 {
-                    if (ar[i, j] > max)
-                        max = ar[i, j];
-                    if (ar[i, j] < min)
-                        min = ar[i, j];
+                    if (array[i, j] > max)
+                        max = array[i, j];
+                    if (array[i, j] < min)
+                        min = array[i, j];
                 }
 
-            for (int i = 0; i < Width; i++)
-                for (int j = 0; j < Height; j++)
-                    ar[i, j] = (ar[i, j] - min) / (max - min);
-            return ar;
+            for (int i = 0; i < width; i++)
+                for (int j = 0; j < height; j++)
+                    normalizedArray[i, j] = (array[i, j] - min) / (max - min);
+            return normalizedArray;
         }
-        private void DiamondSquareAlgorithm(float topLeft, float bottomLeft, float bottomRight, float topRight)
+
+        private float[,] DiamondSquareAlgorithm(float topLeft, float bottomLeft, float bottomRight, float topRight, int width, int height, float roughness, float min, float max)
         {
-            HeightMap = new float[Width, Height];
-            int maxIndex = Width - 1;
+            float[,] heightMap = new float[width, height];
+            int maxIndex = width - 1;
             float displacement;
             //Init corners
-            HeightMap[0, 0] = topLeft;
-            HeightMap[maxIndex, 0] = bottomLeft;
-            HeightMap[maxIndex, maxIndex] = bottomRight;
-            HeightMap[0, maxIndex] = topRight;
+            heightMap[0, 0] = topLeft;
+            heightMap[maxIndex, 0] = bottomLeft;
+            heightMap[maxIndex, maxIndex] = bottomRight;
+            heightMap[0, maxIndex] = topRight;
 
             for (int squareSize = maxIndex; squareSize >= 2; squareSize /= 2)
             {
                 int stepSize = squareSize / 2;
-                displacement = (Max - Min) * Roughness * ((float)squareSize / maxIndex);
+                displacement = (max - min) * roughness * ((float)squareSize / maxIndex);
 
                 //Squares
                 for (int x = 0; x < maxIndex; x += squareSize)
                 {
                     for (int y = 0; y < maxIndex; y += squareSize)
                     {
-                        HeightMap[x + stepSize, y + stepSize] = Math.Abs(GetRandomFloat(-displacement, displacement) +
-                                                                (HeightMap[x, y] + HeightMap[x + squareSize, y] + HeightMap[x, y + squareSize] +
-                                                                 HeightMap[x + squareSize, y + squareSize]) / 4);
+                        heightMap[x + stepSize, y + stepSize] = Math.Abs(GetRandomFloat(-displacement, displacement) +
+                                                                (heightMap[x, y] + heightMap[x + squareSize, y] + heightMap[x, y + squareSize] +
+                                                                 heightMap[x + squareSize, y + squareSize]) / 4);
                     }
                 }
 
                 //Diamonds
                 // if the data should wrap then replace Width with maxIndex and uncomment 2 ifs below
-                for (int x = 0; x < Width; x += stepSize)
+                for (int x = 0; x < width; x += stepSize)
                 {
-                    for (int y = (x + stepSize) % squareSize; y < Width; y += squareSize)
+                    for (int y = (x + stepSize) % squareSize; y < width; y += squareSize)
                     {
-                        HeightMap[x, y] = Math.Abs(GetRandomFloat(-displacement, displacement) +
-                                          (HeightMap[(x - stepSize + Width) % Width, y] + HeightMap[(x + stepSize) % Width, y] +
-                                           HeightMap[x, (y + stepSize) % Width] + HeightMap[x, (y - stepSize + Width) % Width]) / 4);
+                        heightMap[x, y] = Math.Abs(GetRandomFloat(-displacement, displacement) +
+                                          (heightMap[(x - stepSize + width) % width, y] + heightMap[(x + stepSize) % width, y] +
+                                           heightMap[x, (y + stepSize) % width] + heightMap[x, (y - stepSize + width) % width]) / 4);
                         //if (x == 0)
                         //    HeightMap[maxIndex, y] = HeightMap[x, y];
                         //if (y == 0)
@@ -230,39 +182,38 @@ namespace Generating
                     }
                 }
             }
+
+            return heightMap;
         }
 
-        public void CreateMesh(float zoom, VAO terrain)
+        private void CreateMesh(float zoom, float[,] heightMap, VAO terrain)
         {
-            Zoom = zoom;
-            Vector3[] vertices = new Vector3[Width * Height];
-            uint[] indices = new uint[2 * Width * Height];
-            Vector2[] texCoords = new Vector2[Width * Height];
-            Vector3[] normals;
-            for (int i = 0, ver = 0, ind = 0; i < Width; i++)
+            int width = heightMap.GetLength(0);
+            int height = heightMap.GetLength(1);
+            Vector3[] vertices = new Vector3[width * height];
+            uint[] indices = new uint[2 * width * height];
+            Vector2[] texCoords = new Vector2[width * height];
+            for (int i = 0, ver = 0, ind = 0; i < width; i++)
             {
                 float z = i * zoom;
-                for (int j = 0; j < Height; j++)
+                for (int j = 0; j < height; j++)
                 {
                     float x = j * zoom;
 
-                    vertices[ver] = new Vector3(x, HeightMap[i, j] * zoom, z);
-                    indices[ind++] = (uint)(i * Width + j);
-                    if (i != Width - 1)
-                        indices[ind++] = (uint)((i + 1) * Width + j);
-                    texCoords[ver++] = new Vector2(x*15 / (Height-1), z*15 /(Width-1)); // 15 * for 513x513 map
+                    vertices[ver] = new Vector3(x, heightMap[i, j] * zoom, z);
+                    indices[ind++] = (uint)(i * width + j);
+                    if (i != width - 1)
+                        indices[ind++] = (uint)((i + 1) * width + j);
+                    texCoords[ver++] = new Vector2(x * 15 / (height - 1), z * 15 / (width - 1)); // 15 * for 513x513 map
                 }
 
                 indices[ind++] = (uint)indices.Length;
             }
+
             terrain.BindVerticesBuffer(vertices);
             terrain.BindIndicesBuffer(indices);
             terrain.BindTexCoordsBuffer(texCoords);
-            CreateNormalMap(out normals);
-            terrain.BindNormalsBuffer(normals);
-            terrain.BindMoisturesBuffer(MoistureMap);
         }
-
 
         /* Triangles: ABC and BDC
          * A ... B
@@ -277,41 +228,43 @@ namespace Generating
          * G.....H.....I
          * 
          */
-        private void CreateNormalMap(out Vector3[] normals)
+        private Vector3[] CreateNormalMap(float zoom, float[,] heightMap)
         {
-            Vector3[,,] triangles = new Vector3[2, Width, Height];
-            for (int i = 0; i < Width - 1; i++)
-                for (int j = 0; j < Height - 1; j++)
+            int width = heightMap.GetLength(0);
+            int height = heightMap.GetLength(1);
+            Vector3[,,] triangles = new Vector3[2, width, height];
+            for (int i = 0; i < width - 1; i++)
+                for (int j = 0; j < height - 1; j++)
                 {
-                    Vector3 A = HeightVectorAt(i, j);
-                    Vector3 B = HeightVectorAt(i, j + 1);
-                    Vector3 C = HeightVectorAt(i + 1, j);
-                    Vector3 D = HeightVectorAt(i + 1, j + 1);
+                    Vector3 A = HeightVectorAt(i, j, zoom, heightMap);
+                    Vector3 B = HeightVectorAt(i, j + 1, zoom, heightMap);
+                    Vector3 C = HeightVectorAt(i + 1, j, zoom, heightMap);
+                    Vector3 D = HeightVectorAt(i + 1, j + 1, zoom, heightMap);
                     Vector3 triangleABCNormal = GetTriangleNormal(A - B, B - C);
                     Vector3 triangleBCDNormal = GetTriangleNormal(D - C, C - B);
                     triangles[0, i, j] = triangleABCNormal;
                     triangles[1, i, j] = triangleBCDNormal;
                 }
 
-            normals = new Vector3[Width * Height];
-            for (int i = 0, nor = 0; i < Width; i++)
+            Vector3[] normals = new Vector3[width * height];
+            for (int i = 0, nor = 0; i < width; i++)
             {
-                for (int j = 0; j < Height; j++, nor++)
+                for (int j = 0; j < height; j++, nor++)
                 {
                     if (i != 0 && j != 0)
                     {
                         normals[nor] += triangles[1, i - 1, j - 1];
                     }
-                    if (i != 0 && j != Height - 1)
+                    if (i != 0 && j != height - 1)
                     {
                         normals[nor] += triangles[0, i - 1, j];
                         normals[nor] += triangles[1, i - 1, j];
                     }
-                    if (i != Width - 1 && j != Height - 1)
+                    if (i != width - 1 && j != height - 1)
                     {
                         normals[nor] += triangles[0, i, j];
                     }
-                    if (i != Width - 1 && j != 0)
+                    if (i != width - 1 && j != 0)
                     {
                         normals[nor] += triangles[0, i, j - 1];
                         normals[nor] += triangles[1, i, j - 1];
@@ -319,12 +272,13 @@ namespace Generating
                     normals[nor].Normalize();
                 }
             }
+
+            return normals;
         }
 
-        private Vector3 HeightVectorAt(int i, int j)
+        private Vector3 HeightVectorAt(int i, int j, float zoom, float[,] heightMap)
         {
-            Vector3 heightVector = new Vector3(j * Zoom, HeightMap[i, j], i * Zoom);
-            return heightVector;
+            return new Vector3(j * zoom, heightMap[i, j], i * zoom);
         }
         
         private Vector3 GetTriangleNormal(Vector3 vector1, Vector3 vector2)
@@ -338,24 +292,6 @@ namespace Generating
             return new Vector3((vector1.X + vector2.X) / 2, (vector1.Y + vector2.Y) / 2, (vector1.Z + vector2.Z) / 2);
         }
 
-        public void NormalizeHeightMap(VAO terrain=null)
-        {
-            NormalizedHeightMap = new float[Width, Height];
-            float max = float.MinValue, min = float.MaxValue;
-            for (int i = 0; i < Width; i++)
-                for (int j = 0; j < Height; j++)
-                {
-                    if (HeightMap[i, j] > max)
-                        max = HeightMap[i, j];
-                    if (HeightMap[i, j] < min)
-                        min = HeightMap[i, j];
-                }
-
-            for (int i = 0; i < Width; i++)
-                for (int j = 0; j < Height; j++)
-                    NormalizedHeightMap[i, j] = (HeightMap[i, j] - min) / (max - min);
-            terrain?.BindNormalizedHeightsBuffer(NormalizedHeightMap);
-        }
         private float GetRandomFloat(float min, float max)
         {
             return (float)rand.NextDouble() * (max - min) + min;
