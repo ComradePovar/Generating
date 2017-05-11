@@ -55,10 +55,10 @@ void main()
 	const float waterLowerBound = 0.0;
 	const float waterUpperBound = 0.13;
 	const float sandLowerBound = 0.18;
-	const float sandUpperBound = 0.21;
-	const float darkgrassLowerBound = 0.28;
-	const float darkgrassUpperBound = 0.5;
-	const float rockLowerBound = 0.7;
+	const float sandUpperBound = 0.45;
+	const float darkgrassLowerBound = 0.5;
+	const float darkgrassUpperBound = 0.7;
+	const float rockLowerBound = 0.75;
 	const float rockUpperBound = 1.0;
 
 	const float moistureLevel1 = 0.305;
@@ -111,27 +111,22 @@ void main()
 			outputColor = dirt * dirtInfluence + darkgrass * (1.0 - dirtInfluence);
 		} else if (moisture <= moistureLevel2) {
 			float sandInfluence = (moisture - moistureLevel1) / (moistureLevel2 - moistureLevel1);
-			float dirtInfluence = (height - sandUpperBound) / (darkgrassLowerBound - sandUpperBound);
-			outputColor = sand * sandInfluence + darkgrass * (1.0 - sandInfluence);
-			outputColor = outputColor * (1.0 - dirtInfluence) + dirt * dirtInfluence;
-		} else if (moisture <= moistureLevel3) {
-			float dirtInfluence = (height - sandUpperBound) / (darkgrassLowerBound - sandUpperBound);
-			outputColor = dirt * dirtInfluence + sand * (1.0 - dirtInfluence);
-		} else if (moisture <= moistureLevel4) {
-			float darkgrassInfluence = (moisture - moistureLevel3) / (moistureLevel4 - moistureLevel3);
-			float sandInfluence = 1.0 - (height - sandUpperBound) / (darkgrassLowerBound - sandUpperBound);
-  		    outputColor = darkgrass * darkgrassInfluence + dirt * (1.0 - darkgrassInfluence);
-			outputColor = outputColor * (1.0 - sandInfluence) + sand * sandInfluence;
+			float darkgrassInfluence = (moisture - moistureLevel1) / (moistureLevel2 - moistureLevel1);
+			float heightInfluence = (height - sandUpperBound) / (darkgrassLowerBound - sandUpperBound);
+			vec4 darkgrassSandColor = sand * sandInfluence + darkgrass * (1.0 - sandInfluence);
+			vec4 dirtDarkGrassColor = darkgrass * darkgrassInfluence + dirt * (1.0 - darkgrassInfluence);
+			outputColor = dirtDarkGrassColor * heightInfluence + darkgrassSandColor * (1.0 - heightInfluence);
 		} else {
 			float darkgrassInfluence = (height - sandUpperBound) / (darkgrassLowerBound - sandUpperBound);
 			outputColor = darkgrass * darkgrassInfluence + sand * (1.0 - darkgrassInfluence);
 		}
 	} else if (height <= darkgrassUpperBound) {
-		if (moisture <= moistureLevel3){
+		if (moisture <= moistureLevel1){
 			outputColor = dirt;
-		} else if (moisture <= moistureLevel4){
-			float darkgrassInfluence = (moisture - moistureLevel3) / (moistureLevel4 - moistureLevel3);
+		} else if (moisture <= moistureLevel2){
+			float darkgrassInfluence = (moisture - moistureLevel1) / (moistureLevel2 - moistureLevel1);
 			outputColor = darkgrass * darkgrassInfluence + dirt * (1.0 - darkgrassInfluence);
+			//outputColor = vec4(0.0, 0.0, 0.0, 1.0);
 		} else {
 			outputColor = darkgrass;
 		}
@@ -142,18 +137,13 @@ void main()
 			outputColor = rock * rockInfluence + dirt * (1.0 - rockInfluence);
 		} else if (moisture <= moistureLevel2) {
 			float mossyrockInfluence = (moisture - moistureLevel1) / (moistureLevel2 - moistureLevel1);
-			float dirtInfluence = 1.0 - (height - darkgrassUpperBound) / (rockLowerBound - darkgrassUpperBound);
-			specularColor = getSpecularColor() * max(1.0 - mossyrockInfluence - dirtInfluence, 0.0);
-			outputColor = mossyrock * mossyrockInfluence + rock * (1.0 - mossyrockInfluence);
-			outputColor = outputColor * (1.0 - dirtInfluence) + dirt * dirtInfluence;
-		} else if (moisture <= moistureLevel3) {
-			float mossyrockInfluence = (height - darkgrassUpperBound) / (rockLowerBound - darkgrassUpperBound);
-			outputColor = mossyrock * mossyrockInfluence + dirt * (1.0 - mossyrockInfluence);
-		} else if (moisture <= moistureLevel4) {
-			float darkgrassInfluence = (moisture - moistureLevel3) / (moistureLevel4 - moistureLevel3);
-			float mossyrockInfluence = (height - darkgrassUpperBound) / (rockLowerBound - darkgrassUpperBound);
-			outputColor = darkgrass * darkgrassInfluence + dirt * (1.0 - darkgrassInfluence);
-			outputColor = outputColor * (1.0 - mossyrockInfluence) + mossyrock * mossyrockInfluence;
+			float darkgrassInfluence = (moisture - moistureLevel1) / (moistureLevel2 - moistureLevel1);
+			float heightInfluence = (height - darkgrassUpperBound) / (rockLowerBound - darkgrassUpperBound);
+			specularColor = getSpecularColor() * heightInfluence;
+			vec4 rockMossyRockColor = mossyrock * mossyrockInfluence + rock * (1.0 - mossyrockInfluence);
+			vec4 dirtDarkGrassColor = darkgrass * darkgrassInfluence + dirt * (1.0 - darkgrassInfluence);
+			outputColor = rockMossyRockColor * heightInfluence + dirtDarkGrassColor * (1.0 - heightInfluence);
+			//outputColor = vec4(0.0, 0.0, 0.0, 1.0);
 		} else {
 			float mossyrockInfluence = (height - darkgrassUpperBound) / (rockLowerBound - darkgrassUpperBound);
 			outputColor = mossyrock * mossyrockInfluence + darkgrass * (1.0 - mossyrockInfluence);

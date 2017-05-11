@@ -55,23 +55,23 @@ namespace Generating
                 for (int j = 0; j < height; j++)
                 {
                     //круг
-                    //float distanceToIsland = (float)Math.Sqrt(Math.Pow(i - islandRadius, 2) + Math.Pow(j - islandRadius, 2));
-                    //float distanceToCenter = (float)Math.Sqrt(Math.Pow(i - center.X, 2) + Math.Pow(j - center.Y, 2));
-                    //float maxWidth = islandRadius;
-                    //float delta = distanceToIsland / maxWidth;
-                    //float influence = delta * delta;
-                    //influence = influence > 1f ? 0f : 1.0f - influence;
-                    //normalizedHeightMap[i, j] *= influence;
-                    //heightMap[i, j] *= influence;
-
-                    //квадрат
-                    float distanceToIsland = (float)Math.Max(Math.Abs(i - islandRadius), Math.Abs(j - islandRadius));
-                    float maxWidth = islandRadius - 10;
+                    float distanceToIsland = (float)Math.Sqrt(Math.Pow(i - islandRadius, 2) + Math.Pow(j - islandRadius, 2));
+                    float distanceToCenter = (float)Math.Sqrt(Math.Pow(i - center.X, 2) + Math.Pow(j - center.Y, 2));
+                    float maxWidth = islandRadius;
                     float delta = distanceToIsland / maxWidth;
                     float influence = delta * delta;
-                    influence = influence > 1.0f ? 0.0f : 1.0f - influence;
+                    influence = influence > 1f ? 0f : 1.0f - influence;
                     normalizedHeightMap[i, j] *= influence;
                     heightMap[i, j] *= influence;
+
+                    //квадрат
+                    //float distanceToIsland = (float)Math.Max(Math.Abs(i - islandRadius), Math.Abs(j - islandRadius));
+                    //float maxWidth = islandRadius - 10;
+                    //float delta = distanceToIsland / maxWidth;
+                    //float influence = delta * delta;
+                    //influence = influence > 1.0f ? 0.0f : 1.0f - influence;
+                    //normalizedHeightMap[i, j] *= influence;
+                    //heightMap[i, j] *= influence;
 
                     //дефолт
                 }

@@ -49,7 +49,7 @@ namespace Generating.SceneObjects
 
         public void Resize(int width, int height)
         {
-            Projection = Matrix4.CreatePerspectiveFieldOfView(MathHelper.PiOver4, width / (float)height, 1.0f, 20000.0f);
+            Projection = Matrix4.CreatePerspectiveFieldOfView(MathHelper.PiOver4, width / (float)height, 10.0f, 20000.0f);
             GL.MatrixMode(MatrixMode.Projection);
             GL.LoadMatrix(ref Projection);
         }

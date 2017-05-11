@@ -63,7 +63,7 @@
     <Compile Include="GUI\GuiTexture.cs" />
     <Compile Include="SceneObjects\Skybox.cs" />
     <Compile Include="Textures\Texture.cs" />
-    <Compile Include="Water.cs" />
+    <Compile Include="SceneObjects\Water.cs" />
     <Compile Include="SceneObjects\Light.cs" />
     <Compile Include="Shaders\Shader.cs" />
     <Compile Include="Shaders\ShaderProgram.cs" />
