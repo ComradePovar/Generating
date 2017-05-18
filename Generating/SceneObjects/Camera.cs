@@ -1,8 +1,10 @@
 ﻿using System;
 using OpenTK;
-using OpenTK.Input;
+using System.Windows.Forms;
 using OpenTK.Graphics.OpenGL;
 using Generating.Interfaces;
+using System.Drawing;
+using OpenTK.Input;
 
 namespace Generating.SceneObjects
 {
@@ -16,7 +18,6 @@ namespace Generating.SceneObjects
         public float Pitch { get; set; }
         private int prevMouseX;
         private int prevMouseY;
-        internal Game scene { get; set; }
 
         public float MovementSpeed { get; set; }
         public float RotationSpeed { get; set; }
@@ -36,15 +37,19 @@ namespace Generating.SceneObjects
 
         private Camera()
         {
-            Eye = Vector3.Zero;
-            target = Vector3.UnitZ;
-            upVector = Vector3.UnitY;
-            MovementSpeed = 5.5f;
-            RotationSpeed = .001f;
+        }
 
-            View = Matrix4.LookAt(Eye, target, upVector);
+        public static void InitCamera(SceneParameters.CameraParameters args)
+        {
+            Instance.Eye = args.Eye;
+            Instance.target = args.Target;
+            Instance.upVector = args.UpVector;
+            Instance.MovementSpeed = args.MovementSpeed;
+            Instance.RotationSpeed = args.RotationSpeed;
+
+            Instance.View = Matrix4.LookAt(Instance.Eye, Instance.target, Instance.upVector);
             GL.MatrixMode(MatrixMode.Modelview);
-            GL.LoadMatrix(ref View);
+            GL.LoadMatrix(ref Instance.View);
         }
 
         public void Resize(int width, int height)
@@ -63,7 +68,8 @@ namespace Generating.SceneObjects
 
         public void UpdateView(MouseState mouse, KeyboardState keyboard)
         {
-            if (mouse.X < prevMouseX)
+            
+        if (mouse.X < prevMouseX)
             {
                 Facing += RotationSpeed * (prevMouseX - mouse.X);
                 prevMouseX = mouse.X;
@@ -83,7 +89,7 @@ namespace Generating.SceneObjects
                 Pitch += RotationSpeed * (prevMouseY - mouse.Y);
                 prevMouseY = mouse.Y;
             }
-            
+
             if (keyboard[Key.W])
                 Translate(MovementSpeed * (float)Math.Sin(Facing), 0, MovementSpeed * (float)Math.Cos(Facing));
             if (keyboard[Key.S])
@@ -126,8 +132,10 @@ namespace Generating.SceneObjects
                 Translate(0, MovementSpeed, 0);
             if (keyboard[Key.LControl])
                 Translate(0, -MovementSpeed, 0);
+
             UpdateView();
         }
+
         public void UpdateView()
         {
 

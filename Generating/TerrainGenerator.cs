@@ -28,6 +28,10 @@ namespace Generating
         private TerrainGenerator() { }
         public void GenerateIsland(VAO terrain, int width, int height, float roughness, float min, float max, float zoom, out float waterHeight)
         {
+            if (width == 2 || width == 4 || width == 8 || width == 16 || width == 32 || width == 64 || width == 128 || width == 256 || width == 512 || width == 1024)
+                width++;
+            if (height == 2 || height == 4 || height == 8 || height == 16 || height == 32 || height == 64 || height == 128 || height == 256 || height == 512 || height == 1024)
+                height++;
             float[,] heightMap = DiamondSquareAlgorithm(0, 0, 0, 0, width, height, roughness, min, max);
             float[,] normalizedHeightMap = GetNormalizedArray(heightMap);
 

@@ -52,20 +52,20 @@ namespace Generating
         private Light light;
         
 
-        public Water(Light light, int defaultWindowWidth, int defaultWindowHeight, int tileWidth, int tileHeight, float zoom, float waterHeight)
+        public Water(Light light, SceneParameters.TerrainParameters args, float waterHeight)
         {
             dudvMapTexture = new Texture2D("dudvMap.jpg");
             normalMapTexture = new Texture2D("normalMap.jpg");
 
-            this.defaultWindowWidth = defaultWindowWidth;
-            this.defaultWindowHeight = defaultWindowHeight;
-            this.tileWidth = tileWidth;
-            this.tileHeight = tileHeight;
+            this.defaultWindowWidth = args.WindowWidth;
+            this.defaultWindowHeight = args.WindowHeight;
+            this.tileWidth = args.Width;
+            this.tileHeight = args.Height;
             this.light = light;
             this.modelMatrix = Matrix4.Identity;
 
             InitShader();
-            InitVAO(zoom, waterHeight);
+            InitVAO(args.Scale, waterHeight);
             InitReflectionFrameBuffer();
             InitRefractionFrameBuffer();
         }

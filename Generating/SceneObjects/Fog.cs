@@ -7,7 +7,7 @@ using OpenTK;
 
 namespace Generating.SceneObjects
 {
-    enum FogType { Linear, Exp, Exp2 }
+    public enum FogType { Linear, Exp, Exp2 }
     class Fog
     {
         public Vector4 Color;

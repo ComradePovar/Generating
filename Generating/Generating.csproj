@@ -40,6 +40,9 @@
       <HintPath>..\packages\OpenTK.1.1.2349.61993\lib\NET40\OpenTK.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="OpenTK.GLControl">
+      <HintPath>..\packages\OpenTK.GLControl.1.1.2349.61993\lib\NET40\OpenTK.GLControl.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -55,9 +58,16 @@
   <ItemGroup>
     <Compile Include="Interfaces\IRenderable.cs" />
     <Compile Include="Interfaces\IResizable.cs" />
+    <Compile Include="MainForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="MainForm.Designer.cs">
+      <DependentUpon>MainForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="Scene.cs" />
     <Compile Include="SceneObjects\Fog.cs" />
     <Compile Include="SceneObjects\Terrain.cs" />
+    <Compile Include="SceneParameters.cs" />
     <Compile Include="Textures\CubeMapTexture.cs" />
     <Compile Include="GUI\Gui.cs" />
     <Compile Include="GUI\GuiTexture.cs" />
@@ -73,6 +83,9 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TerrainGenerator.cs" />
     <Compile Include="VAO.cs" />
+    <EmbeddedResource Include="MainForm.resx">
+      <DependentUpon>MainForm.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>

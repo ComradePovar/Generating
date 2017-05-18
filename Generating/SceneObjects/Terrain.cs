@@ -31,9 +31,7 @@ namespace Generating.SceneObjects
         private ShaderProgram shader;
         private VAO vao;
         private Water water;
-
-        private float zoom = 1.0f;
-        private float roughness = 18.0f;
+        
         private float waterHeight;
         
         private Vector4 horizontalPlaneReflection;
@@ -42,10 +40,10 @@ namespace Generating.SceneObjects
 
         private Matrix4 modelMatrix;
 
-        public Terrain(int width, int height, int windowWidth, int windowHeight, Scene parentScene)
+        public Terrain(SceneParameters.TerrainParameters args, Scene parentScene)
         {
-            this.Width = width;
-            this.Height = height;
+            this.Width = args.Width;
+            this.Height = args.Height;
 
             rock = new Texture2D("rock.jpg");
             mossyrock = new Texture2D("mossyrock.jpg");
@@ -55,13 +53,12 @@ namespace Generating.SceneObjects
             sand = new Texture2D("sand.jpg");
 
             this.ParentScene = parentScene;
-
-            Vector3 lightPos = new Vector3(-70, 100, 70);
-            InitVAO();
+            
+            InitVAO(args);
             InitShader();
-            InitLight(lightPos);
-            InitFog();
-            InitWater(lightPos, width, height, windowWidth, windowHeight);
+            InitLight(args);
+            InitFog(args);
+            InitWater(args);
 
 
             horizontalPlaneReflection = new Vector4(0.0f, 1.0f, 0.0f, -waterHeight);
@@ -70,46 +67,46 @@ namespace Generating.SceneObjects
             modelMatrix = Matrix4.Identity;
         }
 
-        private void InitLight(Vector3 lightPos)
+        private void InitLight(SceneParameters.TerrainParameters args)
         {
-            light = new Light(lightPos, -45.0f)
+            light = new Light(args.LightPosition, args.LightAngle)
             {
-                Color = new Vector3(1.0f, 1.0f, 1.0f),
-                AmbientIntensity = 0.25f,
-                SpecularIntensity = 1,
-                SpecularPower = 2
+                Color = args.LightColor,
+                AmbientIntensity = args.AmbientIntensity,
+                SpecularIntensity = args.SpecularIntensity,
+                SpecularPower = args.SpecularPower
             };
         }
 
-        private void InitFog()
+        private void InitFog(SceneParameters.TerrainParameters args)
         {
             fog = new Fog()
             {
-                Color = new Vector4(0.5f, 0.5f, 0.5f, 1.0f),
-                Density = 0.001f,
-                Start = 30.0f,
-                End = 100.0f,
-                Type = FogType.Exp2
+                Color = args.FogColor,
+                Density = args.FogDensity,
+                Start = args.FogStart,
+                End = args.FogEnd,
+                Type = args.FogType
             };
         }
 
-        private void InitWater(Vector3 lightPos, int width, int height, int windowWidth, int windowHeight)
+        private void InitWater(SceneParameters.TerrainParameters args)
         {
-            Light waterLight = new Light(lightPos, -45.0f)
+            Light waterLight = new Light(args.LightPosition, args.LightAngle)
             {
-                Color = new Vector3(1.0f, 1.0f, 1.0f),
-                SpecularIntensity = 0.1f,
-                SpecularPower = 2
+                Color = args.WaterLightColor,
+                SpecularIntensity = args.WaterSpecularIntensity,
+                SpecularPower = args.WaterSpecularPower
             };
-            water = new Water(waterLight, windowWidth, windowHeight, width, height, zoom, waterHeight);
+            water = new Water(waterLight, args, waterHeight);
         }
 
-        private void InitVAO()
+        private void InitVAO(SceneParameters.TerrainParameters args)
         {
             vao = new VAO();
-            float min = 0;
-            float max = 10;
-            TerrainGenerator.Instance.GenerateIsland(vao, Width, Height, roughness, min, max, zoom, out waterHeight);
+            TerrainGenerator.Instance.GenerateIsland(vao, args.Width, args.Height, args.Roughness,
+                                                     args.TerrainGenerationMin, args.TerrainGenerationMax, 
+                                                     args.Scale, out waterHeight);
         }
 
 
