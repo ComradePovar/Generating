@@ -42,8 +42,8 @@ namespace Generating.SceneObjects
 
         public Terrain(SceneParameters.TerrainParameters args, Scene parentScene)
         {
-            this.Width = args.Width;
-            this.Height = args.Height;
+            this.Width = args.Size;
+            this.Height = args.Size;
 
             rock = new Texture2D("rock.jpg");
             mossyrock = new Texture2D("mossyrock.jpg");
@@ -69,7 +69,7 @@ namespace Generating.SceneObjects
 
         private void InitLight(SceneParameters.TerrainParameters args)
         {
-            light = new Light(args.LightPosition, args.LightAngle)
+            light = new Light(args.LightPosition)
             {
                 Color = args.LightColor,
                 AmbientIntensity = args.AmbientIntensity,
@@ -92,7 +92,7 @@ namespace Generating.SceneObjects
 
         private void InitWater(SceneParameters.TerrainParameters args)
         {
-            Light waterLight = new Light(args.LightPosition, args.LightAngle)
+            Light waterLight = new Light(args.LightPosition)
             {
                 Color = args.WaterLightColor,
                 SpecularIntensity = args.WaterSpecularIntensity,
@@ -104,11 +104,33 @@ namespace Generating.SceneObjects
         private void InitVAO(SceneParameters.TerrainParameters args)
         {
             vao = new VAO();
-            TerrainGenerator.Instance.GenerateIsland(vao, args.Width, args.Height, args.Roughness,
+            TerrainGenerator.Instance.GenerateIsland(vao, args.Size, args.Size, args.Roughness,
                                                      args.TerrainGenerationMin, args.TerrainGenerationMax, 
                                                      args.Scale, out waterHeight);
         }
 
+        public void SetLight(SceneParameters.TerrainParameters args)
+        {
+            light.AmbientIntensity = args.AmbientIntensity;
+            light.SpecularIntensity = args.SpecularIntensity;
+            light.SpecularPower = args.SpecularPower;
+            light.LightPos = args.LightPosition;
+            water.SetWaterArgs(args);
+        }
+
+        public void SetFog(SceneParameters.TerrainParameters args)
+        {
+            fog.Density = args.FogDensity;
+            fog.Start = args.FogStart;
+            fog.End = args.FogEnd;
+            fog.Type = args.FogType;
+            water.SetFog(args);
+        }
+
+        public void SetWaterArgs(SceneParameters.TerrainParameters args)
+        {
+            water.SetWaterArgs(args);
+        }
 
         private void InitShader()
         {

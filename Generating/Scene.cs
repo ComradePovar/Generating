@@ -13,15 +13,17 @@ namespace Generating
     {
         public List<IRenderable> renderableObjects { get; }
         public List<IResizable> resizableObjects { get; }
+        public Terrain Terrain { get; }
+        public Skybox Skybox { get; }
 
         public Scene(SceneParameters args)
         {
             Camera.InitCamera(args.CameraArgs);
-            Terrain terrain = new Terrain(args.TerrainArgs, this);
-            Skybox skybox = new Skybox((int)(args.TerrainArgs.Width * args.TerrainArgs.Scale));
+            Terrain = new Terrain(args.TerrainArgs, this);
+            Skybox = new Skybox((int)(args.TerrainArgs.Size * args.TerrainArgs.Scale));
 
-            renderableObjects = new List<IRenderable>(new List<IRenderable>() { terrain, skybox });
-            resizableObjects = new List<IResizable>(new List<IResizable>() { terrain });
+            renderableObjects = new List<IRenderable>(new List<IRenderable>() { Terrain, Skybox });
+            resizableObjects = new List<IResizable>(new List<IResizable>() { Terrain });
         }
 
         public void Render()

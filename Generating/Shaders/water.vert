@@ -6,6 +6,7 @@ layout (location = 1) in vec2 inTexCoords;
 out vec4 clipSpace;
 out vec2 texCoords;
 out vec3 cameraVector;
+smooth out vec4 eyeSpacePosition;
 
 uniform mat4 projectionMatrix;
 uniform mat4 viewMatrix;
@@ -14,8 +15,10 @@ uniform vec3 cameraPosition;
 
 void main() {
 	vec4 worldPosition = modelMatrix * vec4(inPosition, 1.0);
-	clipSpace = projectionMatrix * viewMatrix * worldPosition;
+	vec4 eyeSpacePositionVertex = viewMatrix*worldPosition;
+	clipSpace = projectionMatrix * eyeSpacePositionVertex;
 	gl_Position = clipSpace;
 	texCoords = inTexCoords;
 	cameraVector = cameraPosition - worldPosition.xyz;
+	eyeSpacePosition = eyeSpacePositionVertex;
 }

@@ -27,8 +27,8 @@ namespace Generating
         private const int REFRACTION_HEIGHT = 720;
 
         private float time = 0.0f;
-        private float waterSpeed = 0.0003f;
-        private float waveStrength = 0.02f;
+        private float waterSpeed;
+        private float waveStrength;
 
         private ShaderProgram shader;
 
@@ -50,6 +50,7 @@ namespace Generating
         
         private Matrix4 modelMatrix;
         private Light light;
+        private Fog fog;
         
 
         public Water(Light light, SceneParameters.TerrainParameters args, float waterHeight)
@@ -59,15 +60,30 @@ namespace Generating
 
             this.defaultWindowWidth = args.WindowWidth;
             this.defaultWindowHeight = args.WindowHeight;
-            this.tileWidth = args.Width;
-            this.tileHeight = args.Height;
+            this.tileWidth = args.Size;
+            this.tileHeight = args.Size;
             this.light = light;
+            this.waterSpeed = args.WaterSpeed;
+            this.waveStrength = args.WaterWaveStrength;
             this.modelMatrix = Matrix4.Identity;
 
             InitShader();
             InitVAO(args.Scale, waterHeight);
+            InitFog(args);
             InitReflectionFrameBuffer();
             InitRefractionFrameBuffer();
+        }
+
+        private void InitFog(SceneParameters.TerrainParameters args)
+        {
+            fog = new Fog()
+            {
+                Color = args.FogColor,
+                Density = args.FogDensity,
+                Start = args.FogStart,
+                End = args.FogEnd,
+                Type = args.FogType
+            };
         }
 
         private void InitShader()
@@ -94,11 +110,31 @@ namespace Generating
             shader.Uniforms["specularIntensity"] = GL.GetUniformLocation(shader.ID, "specularIntensity");
             shader.Uniforms["specularPower"] = GL.GetUniformLocation(shader.ID, "specularPower");
             shader.Uniforms["depthMap"] = GL.GetUniformLocation(shader.ID, "depthMap");
+            shader.Uniforms["fog.color"] = GL.GetUniformLocation(shader.ID, "fog.color");
+            shader.Uniforms["fog.start"] = GL.GetUniformLocation(shader.ID, "fog.start");
+            shader.Uniforms["fog.end"] = GL.GetUniformLocation(shader.ID, "fog.end");
+            shader.Uniforms["fog.density"] = GL.GetUniformLocation(shader.ID, "fog.density");
+            shader.Uniforms["fog.type"] = GL.GetUniformLocation(shader.ID, "fog.type");
 
             shader.AttribLocation["inPosition"] = GL.GetAttribLocation(shader.ID, "inPosition");
             shader.AttribLocation["inTexCoords"] = GL.GetAttribLocation(shader.ID, "inTexCoords");
         }
 
+        public void SetWaterArgs(SceneParameters.TerrainParameters args)
+        {
+            light.LightPos = args.LightPosition;
+            light.SpecularIntensity = args.WaterSpecularIntensity;
+            light.SpecularPower = args.WaterSpecularPower;
+            waveStrength = args.WaterWaveStrength;
+            waterSpeed = args.WaterSpeed;
+        }
+        public void SetFog(SceneParameters.TerrainParameters args)
+        {
+            fog.Density = args.FogDensity;
+            fog.Start = args.FogStart;
+            fog.End = args.FogEnd;
+            fog.Type = args.FogType;
+        }
         private void InitVAO(float zoom, float waterHeight)
         {
             vao = new VAO();
@@ -258,6 +294,11 @@ namespace Generating
             GL.Uniform3(shader.Uniforms["lightColor"], ref light.Color);
             GL.Uniform1(shader.Uniforms["specularIntensity"], light.SpecularIntensity);
             GL.Uniform1(shader.Uniforms["specularPower"], light.SpecularPower);
+            GL.Uniform4(shader.Uniforms["fog.color"], ref fog.Color);
+            GL.Uniform1(shader.Uniforms["fog.density"], fog.Density);
+            GL.Uniform1(shader.Uniforms["fog.start"], fog.Start);
+            GL.Uniform1(shader.Uniforms["fog.end"], fog.End);
+            GL.Uniform1(shader.Uniforms["fog.type"], (int)fog.Type);
 
             GL.BindVertexArray(vao.ID);
 

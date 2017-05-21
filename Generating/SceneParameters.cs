@@ -6,8 +6,7 @@ namespace Generating
     {
         public class TerrainParameters
         {
-            public int Width { get; set; }
-            public int Height { get; set; }
+            public int Size { get; set; }
             public float Scale { get; set; }
 
             public int WindowWidth { get; set; }
@@ -20,7 +19,6 @@ namespace Generating
             
 
             public Vector3 LightPosition { get; set; }
-            public float LightAngle { get; set; }
             public Vector3 LightColor { get; set; }
             public float AmbientIntensity { get; set; }
             public float SpecularIntensity { get; set; }
@@ -35,6 +33,8 @@ namespace Generating
             public Vector3 WaterLightColor { get; set; }
             public float WaterSpecularIntensity { get; set; }
             public float WaterSpecularPower { get; set; }
+            public float WaterWaveStrength { get; set; }
+            public float WaterSpeed { get; set; }
         }
 
         public class CameraParameters
