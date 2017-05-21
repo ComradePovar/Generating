@@ -21,10 +21,7 @@ namespace Generating
     {
         private bool isGLControlFocused = true;
         private bool isLoaded = false;
-        private Point glControlCenter;
-        private Point prevCursorPosition;
         private Vector3 lightPos;
-        private bool isHeightMapDataUpdated;
         
         private SceneParameters sceneParameters;
 
@@ -65,10 +62,10 @@ namespace Generating
 
             if (isLoaded)
             {
-                glControlCenter = new Point(glControl.Width / 2 + glControl.Location.X, glControl.Height / 2 + glControl.Location.Y);
-                prevCursorPosition = Cursor.Position;
                 scene.Resize(glControl.ClientSize.Width, glControl.ClientSize.Height);
                 Camera.Instance.Resize(glControl.ClientSize.Width, glControl.ClientSize.Height);
+                sceneParameters.TerrainArgs.WindowWidth = glControl.ClientSize.Width;
+                sceneParameters.TerrainArgs.WindowHeight = glControl.ClientSize.Height;
             }
         }
 
@@ -104,8 +101,8 @@ namespace Generating
             tbSize.Text = "1025";
             tbScale.Text = "1.0";
 
-            sceneParameters.TerrainArgs.WindowWidth = Width;
-            sceneParameters.TerrainArgs.WindowHeight = Height;
+            sceneParameters.TerrainArgs.WindowWidth = glControl.ClientSize.Width;
+            sceneParameters.TerrainArgs.WindowHeight = glControl.ClientSize.Height;
 
             sceneParameters.TerrainArgs.TerrainGenerationMin = 0.0f;
             sceneParameters.TerrainArgs.TerrainGenerationMax = 10.0f;
@@ -156,11 +153,7 @@ namespace Generating
 
         private void btnGenerate_Click(object sender, EventArgs e)
         {
-            if (isHeightMapDataUpdated)
-            {
-                scene = new Scene(sceneParameters);
-                isHeightMapDataUpdated = false;
-            }
+            scene = new Scene(sceneParameters);
         }
 
         private void tbSize_Leave(object sender, EventArgs e)
@@ -170,7 +163,6 @@ namespace Generating
                 if (sceneParameters.TerrainArgs.Size != value)
                 {
                     sceneParameters.TerrainArgs.Size = value;
-                    isHeightMapDataUpdated = true;
                 }
             }
         }
@@ -182,7 +174,6 @@ namespace Generating
                 if (sceneParameters.TerrainArgs.Scale != value)
                 {
                     sceneParameters.TerrainArgs.Scale = value;
-                    isHeightMapDataUpdated = true;
                 }
             }
         }
@@ -194,7 +185,6 @@ namespace Generating
                 if (sceneParameters.TerrainArgs.Roughness != value)
                 {
                     sceneParameters.TerrainArgs.Roughness = value;
-                    isHeightMapDataUpdated = true;
                 }
             }
         }
